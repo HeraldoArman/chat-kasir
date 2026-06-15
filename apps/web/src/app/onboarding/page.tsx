@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2, Store } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { createStore } from "@/lib/store";
 import { Button } from "@chat-kasir/ui/components/button";
 import {
   Card,
@@ -16,7 +17,6 @@ import {
 } from "@chat-kasir/ui/components/card";
 import { Input } from "@chat-kasir/ui/components/input";
 import { Label } from "@chat-kasir/ui/components/label";
-import { createStore } from "@/lib/store";
 
 function FadeIn({ children }: { children: React.ReactNode }) {
   return (
@@ -61,9 +61,9 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="flex min-h-[calc(100dvh-4rem)] items-center justify-center px-4 py-12">
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden px-4 pt-24 pb-12">
       <FadeIn>
-        <Card className="w-full max-w-lg rounded-3xl border">
+        <Card className="w-full max-w-3xl w-xl rounded-3xl border">
           <CardHeader className="space-y-1 text-center">
             <div className="bg-primary text-primary-foreground mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl">
               <Store className="size-6" />

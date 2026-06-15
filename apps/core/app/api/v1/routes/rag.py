@@ -27,7 +27,7 @@ class QueryResponse(BaseModel):
     chunks: list[RetrievedChunk]
 
 
-router = APIRouter(prefix="/rag", tags=["RAG"])
+router = APIRouter(tags=["RAG"])
 
 _rag_service: RAGService | None = None
 

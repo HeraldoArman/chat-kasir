@@ -155,7 +155,7 @@ class Cart(Base):
         DateTime(timezone=True), onupdate=func.now(), nullable=True
     )
 
-    store: Mapped[Store] = relationship("Store", lazy="selectin")
+    store: Mapped[Store] = relationship("Store", lazy="selectin", overlaps="carts")
     items: Mapped[list["CartItem"]] = relationship(
         "CartItem", back_populates="cart", lazy="selectin", cascade="all, delete-orphan"
     )
@@ -200,7 +200,7 @@ class Promotion(Base):
     is_active: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    store: Mapped[Store] = relationship("Store", lazy="selectin")
+    store: Mapped[Store] = relationship("Store", lazy="selectin", overlaps="promotions")
 
 
 class Complaint(Base):
@@ -219,7 +219,7 @@ class Complaint(Base):
     status: Mapped[str] = mapped_column(String(20), default="open")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    store: Mapped[Store] = relationship("Store", lazy="selectin")
+    store: Mapped[Store] = relationship("Store", lazy="selectin", overlaps="complaints")
     order: Mapped[Order | None] = relationship("Order", lazy="selectin")
 
 
@@ -238,5 +238,5 @@ class RefundRequest(Base):
     status: Mapped[str] = mapped_column(String(20), default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    store: Mapped[Store] = relationship("Store", lazy="selectin")
+    store: Mapped[Store] = relationship("Store", lazy="selectin", overlaps="refund_requests")
     order: Mapped[Order] = relationship("Order", lazy="selectin")

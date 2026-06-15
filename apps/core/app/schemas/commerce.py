@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -30,7 +31,7 @@ class StoreResponse(StoreBase):
     id: UUID
     slug: str
     owner_id: UUID
-    created_at: str
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
@@ -62,7 +63,7 @@ class ProductResponse(ProductBase):
     id: UUID
     store_id: UUID
     is_active: bool
-    created_at: str
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
@@ -95,7 +96,7 @@ class BankAccountResponse(BankAccountBase):
     id: UUID
     store_id: UUID
     is_primary: bool
-    created_at: str
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
@@ -124,8 +125,8 @@ class OrderResponse(BaseModel):
     status: str
     items: list[dict[str, object]]
     note: str | None
-    created_at: str
-    updated_at: str | None
+    created_at: datetime
+    updated_at: datetime | None
 
     model_config = {"from_attributes": True}
 
@@ -146,7 +147,7 @@ class KnowledgeBaseCreate(BaseModel):
 class KnowledgeBaseResponse(KnowledgeBaseCreate):
     id: UUID
     store_id: UUID
-    created_at: str
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
@@ -205,8 +206,8 @@ class CartResponse(BaseModel):
     customer_phone: str
     items: list[CartItemResponse]
     total: int
-    created_at: str
-    updated_at: str | None
+    created_at: datetime
+    updated_at: datetime | None
 
     model_config = {"from_attributes": True}
 
@@ -245,7 +246,7 @@ class PromotionUpdate(BaseModel):
 class PromotionResponse(PromotionBase):
     id: UUID
     store_id: UUID
-    created_at: str
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
@@ -265,7 +266,7 @@ class ComplaintResponse(BaseModel):
     category: str
     description: str
     status: str
-    created_at: str
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
@@ -283,7 +284,7 @@ class RefundResponse(BaseModel):
     order_id: UUID
     reason: str
     status: str
-    created_at: str
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
