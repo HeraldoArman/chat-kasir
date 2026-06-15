@@ -1,14 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X, Store } from "lucide-react";
 
 import { Button } from "@chat-kasir/ui/components/button";
 import { ModeToggle } from "./mode-toggle";
+import { getMe, removeToken, type User } from "@/lib/auth";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    void getMe().then((currentUser) => setUser(currentUser));
+  }, []);
+
+  const handleLogout = async () => {
+    await removeToken();
+    setUser(null);
+  };
 
   const links = [
     { to: "#features", label: "Features" },
@@ -44,11 +55,37 @@ export default function Header() {
             <div className="hidden md:block">
               <ModeToggle />
             </div>
-            <Link href="#cta" className="hidden md:block">
-              <Button size="sm" className="rounded-full px-4">
-                Start free
-              </Button>
-            </Link>
+
+            {user ? (
+              <>
+                <Link href="/dashboard" className="hidden md:block">
+                  <Button size="sm" variant="outline" className="rounded-full px-4">
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="hidden rounded-full px-4 md:inline-flex"
+                  onClick={handleLogout}
+                >
+                  Log out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="hidden md:block">
+                  <Button size="sm" variant="ghost" className="rounded-full px-4">
+                    Sign in
+                  </Button>
+                </Link>
+                <Link href="/register" className="hidden md:block">
+                  <Button size="sm" className="rounded-full px-4">
+                    Start free
+                  </Button>
+                </Link>
+              </>
+            )}
 
             <button
               type="button"
@@ -80,11 +117,32 @@ export default function Header() {
               ))}
               <div className="flex items-center justify-between pt-2">
                 <ModeToggle />
-                <Link href="#cta" onClick={() => setMenuOpen(false)}>
-                  <Button size="sm" className="rounded-full px-4">
-                    Start free
-                  </Button>
-                </Link>
+                {user ? (
+                  <div className="flex items-center gap-2">
+                    <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
+                      <Button size="sm" variant="outline" className="rounded-full px-4">
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="rounded-full px-4"
+                      onClick={() => {
+                        void handleLogout();
+                        setMenuOpen(false);
+                      }}
+                    >
+                      Log out
+                    </Button>
+                  </div>
+                ) : (
+                  <Link href="/register" onClick={() => setMenuOpen(false)}>
+                    <Button size="sm" className="rounded-full px-4">
+                      Start free
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </div>

@@ -10,6 +10,8 @@ from app.core.config import get_config
 from app.core.env_validator import validate_env
 from app.core.exceptions import AppException
 from app.core.logging import init_logging
+from app.db.init_db import init_db
+from app.db.session import engine
 from app.middleware.logging import LoggingMiddleware
 
 log = structlog.get_logger()
@@ -19,6 +21,7 @@ log = structlog.get_logger()
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     init_logging()
     validate_env()
+    await init_db(engine)
     log.info("application_started")
     yield
     log.info("application_stopping")
