@@ -5,14 +5,20 @@ services:
       dockerfile: apps/core/Dockerfile
     ports:
       - "8000:8000"
+    env_file:
+      - apps/core/.env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - GOWA_BASE_URL=http://whatsapp:8080
+      - QDRANT_URL=${QDRANT_URL}
+      - QDRANT_API_KEY=${QDRANT_API_KEY}
+      - GOWA_BASE_URL=http://whatsapp:3000
       - GOWA_DEVICE_ID=${GOWA_DEVICE_ID}
       - GOWA_WEBHOOK_SECRET=${GOWA_WEBHOOK_SECRET}
+      - HOST=0.0.0.0
+      - PORT=8000
     restart: unless-stopped
     healthcheck:
       test:
@@ -26,16 +32,22 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    depends_on:
+      - whatsapp
     networks:
       - core-network
 
   whatsapp:
     image: aldinokemal2104/go-whatsapp-web-multidevice:latest
+    container_name: chatkasir-whatsapp
     ports:
       - "8080:3000"
     command:
       - rest
       - --debug=true
+      - --port=3000
+    environment:
+      - PORT=3000
     restart: unless-stopped
     networks:
       - core-network

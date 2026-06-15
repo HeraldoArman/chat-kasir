@@ -1,33 +1,37 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Loader2, Store } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { login, register } from "@/lib/auth";
 import { Button } from "@chat-kasir/ui/components/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@chat-kasir/ui/components/card";
 import { Input } from "@chat-kasir/ui/components/input";
 import { Label } from "@chat-kasir/ui/components/label";
-import { login, register } from "@/lib/auth";
 
+// 1. Tambahkan prop className pada FadeIn
 function FadeIn({
   children,
   delay = 0,
+  className,
 }: {
   children: React.ReactNode;
   delay?: number;
+  className?: string;
 }) {
   return (
     <motion.div
+      className={className}
       initial={{ opacity: 0, y: 32 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
@@ -74,7 +78,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="relative flex min-h-[calc(100dvh-4rem)] items-center justify-center overflow-hidden px-4 py-12">
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden px-4 pt-24 pb-12">
       {/* Warm ambient glow — matches landing page CTA pattern */}
       <div
         aria-hidden
@@ -85,8 +89,9 @@ export default function RegisterPage() {
         className="bg-primary/5 dark:bg-primary/10 pointer-events-none absolute -bottom-40 -left-40 size-[28rem] rounded-full blur-3xl"
       />
 
-      <FadeIn>
-        <Card className="w-full max-w-3xl rounded-3xl border shadow-sm">
+      {/* 2. Pindahkan class lebar (w-full max-w-md) ke FadeIn */}
+      <FadeIn className="w-full max-w-md">
+        <Card className="w-full rounded-3xl border shadow-sm">
           <CardHeader className="flex flex-col items-center gap-4 text-center">
             <div className="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-2xl">
               <Store className="size-6" />
