@@ -20,7 +20,13 @@ import { Label } from "@chat-kasir/ui/components/label";
 import { login } from "@/lib/auth";
 import { getMyStore } from "@/lib/store";
 
-function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+function FadeIn({
+  children,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 32 }}
@@ -57,11 +63,11 @@ export default function LoginPage() {
       {/* Warm ambient glow — matches landing page CTA pattern */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -right-32 size-[32rem] rounded-full bg-primary/5 blur-3xl dark:bg-primary/10"
+        className="bg-primary/5 dark:bg-primary/10 pointer-events-none absolute -top-32 -right-32 size-[32rem] rounded-full blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-40 -left-40 size-[28rem] rounded-full bg-primary/5 blur-3xl dark:bg-primary/10"
+        className="bg-primary/5 dark:bg-primary/10 pointer-events-none absolute -bottom-40 -left-40 size-[28rem] rounded-full blur-3xl"
       />
 
       <FadeIn>
@@ -121,8 +127,10 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((previous) => !previous)}
-                    className="absolute inset-y-0 right-0 flex items-center justify-center px-3 text-muted-foreground outline-none hover:text-foreground"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="text-muted-foreground hover:text-foreground absolute inset-y-0 right-0 flex items-center justify-center px-3 outline-none"
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showPassword ? (
                       <EyeOff className="size-4" />
@@ -140,7 +148,10 @@ export default function LoginPage() {
               >
                 {isPending ? (
                   <>
-                    <Loader2 className="size-4 animate-spin" data-icon="inline-start" />
+                    <Loader2
+                      className="size-4 animate-spin"
+                      data-icon="inline-start"
+                    />
                     Signing in...
                   </>
                 ) : (
@@ -153,7 +164,7 @@ export default function LoginPage() {
               Don&apos;t have an account?{" "}
               <Link
                 href="/register"
-                className="font-medium text-primary hover:underline"
+                className="text-primary font-medium hover:underline"
               >
                 Create one
               </Link>

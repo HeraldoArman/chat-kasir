@@ -6,12 +6,7 @@ import { CheckCircle2, Loader2, Receipt } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@chat-kasir/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@chat-kasir/ui/components/card";
+import { Card, CardContent } from "@chat-kasir/ui/components/card";
 import { listOrders, verifyOrder, type Order } from "@/lib/store";
 
 export default function OrdersPage() {
@@ -24,7 +19,9 @@ export default function OrdersPage() {
       const data = await listOrders();
       setOrders(data);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load orders");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load orders"
+      );
     } finally {
       setLoading(false);
     }
@@ -41,7 +38,9 @@ export default function OrdersPage() {
         toast.success("Payment verified");
         await load();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to verify");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to verify"
+        );
       }
     });
   };

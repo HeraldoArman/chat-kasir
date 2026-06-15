@@ -77,6 +77,105 @@ class GetOrderStatusInput(BaseModel):
     customer_phone: str = Field(description="Customer WhatsApp phone number")
 
 
+class AddToCartInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    customer_phone: str = Field(description="Customer WhatsApp phone number")
+    product_id: str = Field(description="UUID of the product to add")
+    quantity: int = Field(default=1, description="Quantity to add (default 1)")
+
+
+class GetCartInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    customer_phone: str = Field(description="Customer WhatsApp phone number")
+
+
+class UpdateCartItemInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    customer_phone: str = Field(description="Customer WhatsApp phone number")
+    cart_item_id: str = Field(description="UUID of the cart item to update")
+    quantity: int = Field(description="New quantity (set to 0 to remove)")
+
+
+class RemoveFromCartInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    customer_phone: str = Field(description="Customer WhatsApp phone number")
+    cart_item_id: str = Field(description="UUID of the cart item to remove")
+
+
+class CheckoutCartInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    customer_phone: str = Field(description="Customer WhatsApp phone number")
+    customer_name: str | None = Field(default=None, description="Optional customer name")
+    note: str | None = Field(default=None, description="Optional order note")
+
+
+class RecommendProductsInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    customer_phone: str | None = Field(default=None, description="Optional customer phone for personalized recs")
+    keywords: list[str] = Field(default_factory=list, description="Keywords to refine recommendations")
+    limit: int = Field(default=5, description="Maximum products to return")
+
+
+class UpsellProductInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    product_id: str = Field(description="UUID of the product to find upsells for")
+    customer_phone: str | None = Field(default=None, description="Optional customer phone for personalization")
+
+
+class CrossSellProductInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    product_id: str = Field(description="UUID of the product to find cross-sells for")
+    customer_phone: str | None = Field(default=None, description="Optional customer phone for personalization")
+
+
+class GetActivePromotionsInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+
+
+class SendPaymentReminderInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    hours: int = Field(default=24, description="Hours since order creation to consider abandoned")
+
+
+class SubmitComplaintInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    customer_phone: str = Field(description="Customer WhatsApp phone number")
+    category: str = Field(description="Complaint category (e.g. 'produk rusak', 'pengiriman lambat')")
+    description: str = Field(description="Detailed complaint description")
+    order_id: str | None = Field(default=None, description="Optional UUID of related order")
+
+
+class SubmitRefundRequestInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    customer_phone: str = Field(description="Customer WhatsApp phone number")
+    order_id: str = Field(description="UUID of the order to request refund for")
+    reason: str = Field(description="Reason for refund request")
+
+
+class GetLowStockProductsInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    threshold: int = Field(default=5, description="Stock threshold (products at or below this are low)")
+
+
+class GetDailySummaryInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    date: str | None = Field(
+        default=None, description="Date in ISO format (YYYY-MM-DD), defaults to today"
+    )
+
+
+class GetCustomerOrderHistoryInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    customer_phone: str = Field(description="Customer WhatsApp phone number")
+    limit: int = Field(default=10, description="Maximum orders to return")
+
+
+class SearchProductsSemanticInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    query: str = Field(description="Natural language search query")
+    limit: int = Field(default=10, description="Maximum products to return")
+
+
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
@@ -308,7 +407,7 @@ async def answer_faq(store_id: str, query: str) -> dict[str, Any]:
         rag = _get_rag_service()
         if rag is not None and not matches:
             try:
-                rag_results = rag.retrieve_with_filter(
+                rag_results = await rag.retrieve_with_filter(
                     query=query,
                     filters={"store_id": store_id, "doc_type": "faq"},
                     top_k=3,
@@ -565,6 +664,743 @@ async def get_order_status(
         return {"success": False, "message": f"Gagal mengambil status pesanan: {e}"}
 
 
+# ---------------------------------------------------------------------------
+# Cart tools
+# ---------------------------------------------------------------------------
+
+
+@tool(args_schema=AddToCartInput)
+async def add_to_cart(
+    store_id: str,
+    customer_phone: str,
+    product_id: str,
+    quantity: int = 1,
+) -> dict[str, Any]:
+    """Add a product to the customer's cart. Creates cart if needed."""
+    try:
+        from app.services.cart import CartService
+
+        async with async_session_factory() as db:
+            svc = CartService(db)
+            cart = await svc.add_item(UUID(store_id), customer_phone, UUID(product_id), quantity)
+            resp = svc.to_response(cart)
+
+        items = [
+            {
+                "cart_item_id": str(it.id),
+                "product_id": str(it.product_id),
+                "name": it.name,
+                "quantity": it.quantity,
+                "unit_price": it.unit_price,
+                "unit_price_display": _format_rupiah(it.unit_price),
+                "total_price": it.total_price,
+                "total_price_display": _format_rupiah(it.total_price),
+            }
+            for it in resp.items
+        ]
+        return {
+            "success": True,
+            "message": f"Produk ditambahkan ke keranjang. Total: {_format_rupiah(resp.total)}.",
+            "data": {"cart_id": str(resp.id), "items": items, "total": resp.total, "total_display": _format_rupiah(resp.total)},
+        }
+    except ValueError as e:
+        log.warning("tool_add_to_cart_validation", error=str(e))
+        return {"success": False, "message": f"Gagal menambahkan produk: {e}", "edge_case": "validation_error"}
+    except Exception as e:
+        log.error("tool_add_to_cart_error", error=str(e))
+        return {"success": False, "message": f"Gagal menambahkan produk ke keranjang: {e}"}
+
+
+@tool(args_schema=GetCartInput)
+async def get_cart(store_id: str, customer_phone: str) -> dict[str, Any]:
+    """Get the customer's current cart contents."""
+    try:
+        from app.services.cart import CartService
+
+        async with async_session_factory() as db:
+            svc = CartService(db)
+            resp = await svc.get_cart(UUID(store_id), customer_phone)
+
+        if not resp.items:
+            return {"success": True, "message": "Keranjang Anda kosong.", "data": {"items": [], "total": 0}}
+
+        items = [
+            {
+                "cart_item_id": str(it.id),
+                "product_id": str(it.product_id),
+                "name": it.name,
+                "quantity": it.quantity,
+                "unit_price": it.unit_price,
+                "unit_price_display": _format_rupiah(it.unit_price),
+                "total_price": it.total_price,
+                "total_price_display": _format_rupiah(it.total_price),
+            }
+            for it in resp.items
+        ]
+        return {
+            "success": True,
+            "message": f"Keranjang Anda berisi {len(resp.items)} item. Total: {_format_rupiah(resp.total)}.",
+            "data": {"cart_id": str(resp.id), "items": items, "total": resp.total, "total_display": _format_rupiah(resp.total)},
+        }
+    except Exception as e:
+        log.error("tool_get_cart_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengambil keranjang: {e}"}
+
+
+@tool(args_schema=UpdateCartItemInput)
+async def update_cart_item(
+    store_id: str,
+    customer_phone: str,
+    cart_item_id: str,
+    quantity: int,
+) -> dict[str, Any]:
+    """Update the quantity of a cart item. Set quantity to 0 to remove it."""
+    try:
+        from app.services.cart import CartService
+
+        async with async_session_factory() as db:
+            svc = CartService(db)
+            cart = await svc.update_item(UUID(store_id), customer_phone, UUID(cart_item_id), quantity)
+            resp = svc.to_response(cart)
+
+        items = [
+            {
+                "cart_item_id": str(it.id),
+                "product_id": str(it.product_id),
+                "name": it.name,
+                "quantity": it.quantity,
+                "unit_price": it.unit_price,
+                "unit_price_display": _format_rupiah(it.unit_price),
+                "total_price": it.total_price,
+                "total_price_display": _format_rupiah(it.total_price),
+            }
+            for it in resp.items
+        ]
+        return {
+            "success": True,
+            "message": "Keranjang diperbarui." if quantity > 0 else "Item dihapus dari keranjang.",
+            "data": {"cart_id": str(resp.id), "items": items, "total": resp.total, "total_display": _format_rupiah(resp.total)},
+        }
+    except ValueError as e:
+        log.warning("tool_update_cart_item_validation", error=str(e))
+        return {"success": False, "message": f"Gagal memperbarui keranjang: {e}", "edge_case": "item_not_found"}
+    except Exception as e:
+        log.error("tool_update_cart_item_error", error=str(e))
+        return {"success": False, "message": f"Gagal memperbarui keranjang: {e}"}
+
+
+@tool(args_schema=RemoveFromCartInput)
+async def remove_from_cart(
+    store_id: str,
+    customer_phone: str,
+    cart_item_id: str,
+) -> dict[str, Any]:
+    """Remove an item from the customer's cart."""
+    try:
+        from app.services.cart import CartService
+
+        async with async_session_factory() as db:
+            svc = CartService(db)
+            cart = await svc.remove_item(UUID(store_id), customer_phone, UUID(cart_item_id))
+            resp = svc.to_response(cart)
+
+        items = [
+            {
+                "cart_item_id": str(it.id),
+                "product_id": str(it.product_id),
+                "name": it.name,
+                "quantity": it.quantity,
+                "unit_price": it.unit_price,
+                "unit_price_display": _format_rupiah(it.unit_price),
+                "total_price": it.total_price,
+                "total_price_display": _format_rupiah(it.total_price),
+            }
+            for it in resp.items
+        ]
+        return {
+            "success": True,
+            "message": "Item dihapus dari keranjang.",
+            "data": {"cart_id": str(resp.id), "items": items, "total": resp.total, "total_display": _format_rupiah(resp.total)},
+        }
+    except ValueError as e:
+        log.warning("tool_remove_from_cart_validation", error=str(e))
+        return {"success": False, "message": f"Gagal menghapus item: {e}", "edge_case": "item_not_found"}
+    except Exception as e:
+        log.error("tool_remove_from_cart_error", error=str(e))
+        return {"success": False, "message": f"Gagal menghapus item dari keranjang: {e}"}
+
+
+@tool(args_schema=CheckoutCartInput)
+async def checkout_cart(
+    store_id: str,
+    customer_phone: str,
+    customer_name: str | None = None,
+    note: str | None = None,
+) -> dict[str, Any]:
+    """Convert the customer's cart into an order and notify the merchant."""
+    try:
+        from app.agent.notifications import notify_merchant_new_order
+        from app.models.commerce import Store
+        from app.services.cart import CartService
+
+        async with async_session_factory() as db:
+            store = await db.get(Store, UUID(store_id))
+            if store is None:
+                return {"success": False, "message": "Toko tidak ditemukan."}
+
+            svc = CartService(db)
+            order = await svc.checkout(UUID(store_id), customer_phone, customer_name, note)
+
+        await notify_merchant_new_order(order, store)
+        return {
+            "success": True,
+            "message": "Pesanan berhasil dibuat dari keranjang.",
+            "data": {
+                "order_id": str(order.id),
+                "total": int(order.total),
+                "total_display": _format_rupiah(order.total),
+                "status": order.status,
+                "items": order.items,
+            },
+        }
+    except ValueError as e:
+        log.warning("tool_checkout_cart_validation", error=str(e))
+        msg = str(e)
+        edge = "empty_cart" if "empty" in msg.lower() else "validation_error"
+        return {"success": False, "message": f"Gagal checkout: {msg}", "edge_case": edge}
+    except Exception as e:
+        log.error("tool_checkout_cart_error", error=str(e))
+        return {"success": False, "message": f"Gagal checkout keranjang: {e}"}
+
+
+# ---------------------------------------------------------------------------
+# Recommendation / upsell / cross-sell tools
+# ---------------------------------------------------------------------------
+
+
+@tool(args_schema=RecommendProductsInput)
+async def recommend_products(
+    store_id: str,
+    customer_phone: str | None = None,
+    keywords: list[str] | None = None,
+    limit: int = 5,
+) -> dict[str, Any]:
+    """Recommend products based on customer history, keywords, or popularity."""
+    try:
+        from app.services.indexing import _get_rag_service
+        from app.services.recommendation import RecommendationService
+
+        if keywords is None:
+            keywords = []
+
+        async with async_session_factory() as db:
+            svc = RecommendationService(db)
+            rag = _get_rag_service()
+            products, reason = await svc.recommend(
+                store_id=UUID(store_id),
+                customer_phone=customer_phone,
+                keywords=keywords,
+                limit=limit,
+                rag_service=rag,
+            )
+
+        if not products:
+            return {"success": True, "message": "Tidak ada rekomendasi produk saat ini.", "data": []}
+
+        items = [
+            {
+                "product_id": str(p.id),
+                "name": p.name,
+                "price": int(p.price),
+                "price_display": _format_rupiah(p.price),
+                "description": p.description,
+                "stock": p.stock,
+            }
+            for p in products
+        ]
+        return {"success": True, "message": f"{reason}. Ditemukan {len(items)} rekomendasi.", "data": items}
+    except Exception as e:
+        log.error("tool_recommend_products_error", error=str(e))
+        return {"success": False, "message": f"Gagal merekomendasikan produk: {e}"}
+
+
+@tool(args_schema=UpsellProductInput)
+async def upsell_product(
+    store_id: str,
+    product_id: str,
+    customer_phone: str | None = None,
+) -> dict[str, Any]:
+    """Suggest a higher-value alternative or premium add-on for the given product."""
+    try:
+        from app.models.commerce import Product
+        from app.services.recommendation import RecommendationService
+
+        async with async_session_factory() as db:
+            source = await db.get(Product, UUID(product_id))
+            if source is None or str(source.store_id) != store_id:
+                return {"success": False, "message": "Produk tidak ditemukan di toko ini."}
+
+            svc = RecommendationService(db)
+            keywords = source.name.lower().split() if source.name else []
+            products, reason = await svc.recommend(
+                store_id=UUID(store_id),
+                customer_phone=customer_phone,
+                keywords=keywords,
+                limit=3,
+            )
+
+        # Filter to products priced higher than the source (upsell logic)
+        upsells = [p for p in products if p.price > source.price]
+        if not upsells:
+            return {
+                "success": True,
+                "message": f"Tidak ada alternatif yang lebih premium untuk {source.name}.",
+                "data": {"source_product": source.name, "upsells": []},
+            }
+
+        items = [
+            {
+                "product_id": str(p.id),
+                "name": p.name,
+                "price": int(p.price),
+                "price_display": _format_rupiah(p.price),
+                "description": p.description,
+                "stock": p.stock,
+            }
+            for p in upsells
+        ]
+        return {
+            "success": True,
+            "message": f"{reason}. {len(items)} alternatif premium untuk {source.name}.",
+            "data": {
+                "source_product": source.name,
+                "source_price": int(source.price),
+                "source_price_display": _format_rupiah(source.price),
+                "upsells": items,
+            },
+        }
+    except Exception as e:
+        log.error("tool_upsell_product_error", error=str(e))
+        return {"success": False, "message": f"Gagal mencari upsell: {e}"}
+
+
+@tool(args_schema=CrossSellProductInput)
+async def cross_sell_product(
+    store_id: str,
+    product_id: str,
+    customer_phone: str | None = None,
+) -> dict[str, Any]:
+    """Suggest complementary products that pair well with the given product."""
+    try:
+        from app.models.commerce import Product
+        from app.services.recommendation import RecommendationService
+
+        async with async_session_factory() as db:
+            source = await db.get(Product, UUID(product_id))
+            if source is None or str(source.store_id) != store_id:
+                return {"success": False, "message": "Produk tidak ditemukan di toko ini."}
+
+            svc = RecommendationService(db)
+            keywords = (source.name or "").lower().split()
+            if source.description:
+                keywords.extend(source.description.lower().split()[:5])
+            products, reason = await svc.recommend(
+                store_id=UUID(store_id),
+                customer_phone=customer_phone,
+                keywords=keywords,
+                limit=5,
+            )
+
+        # Exclude the source product itself from cross-sell suggestions
+        cross_sells = [p for p in products if str(p.id) != product_id]
+        if not cross_sells:
+            return {
+                "success": True,
+                "message": f"Tidak ada produk pelengkap untuk {source.name}.",
+                "data": {"source_product": source.name, "cross_sells": []},
+            }
+
+        items = [
+            {
+                "product_id": str(p.id),
+                "name": p.name,
+                "price": int(p.price),
+                "price_display": _format_rupiah(p.price),
+                "description": p.description,
+                "stock": p.stock,
+            }
+            for p in cross_sells
+        ]
+        return {
+            "success": True,
+            "message": f"{reason}. {len(items)} produk pelengkap untuk {source.name}.",
+            "data": {"source_product": source.name, "cross_sells": items},
+        }
+    except Exception as e:
+        log.error("tool_cross_sell_product_error", error=str(e))
+        return {"success": False, "message": f"Gagal mencari cross-sell: {e}"}
+
+
+# ---------------------------------------------------------------------------
+# Promotion / recovery / complaint / refund tools
+# ---------------------------------------------------------------------------
+
+
+@tool(args_schema=GetActivePromotionsInput)
+async def get_active_promotions(store_id: str) -> dict[str, Any]:
+    """Return all currently active promotions for a store."""
+    try:
+        from app.services.promotion import PromotionService
+
+        async with async_session_factory() as db:
+            svc = PromotionService(db)
+            promotions = await svc.list_active(UUID(store_id))
+
+        if not promotions:
+            return {"success": True, "message": "Saat ini tidak ada promosi aktif.", "data": []}
+
+        items = [
+            {
+                "promotion_id": str(p.id),
+                "name": p.name,
+                "description": p.description,
+                "discount_type": p.discount_type,
+                "discount_value": p.discount_value,
+                "min_quantity": p.min_quantity,
+                "start_at": str(p.start_at) if p.start_at else None,
+                "end_at": str(p.end_at) if p.end_at else None,
+            }
+            for p in promotions
+        ]
+        return {"success": True, "message": f"Ditemukan {len(items)} promosi aktif.", "data": items}
+    except Exception as e:
+        log.error("tool_get_active_promotions_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengambil promosi: {e}"}
+
+
+@tool(args_schema=SendPaymentReminderInput)
+async def send_payment_reminder(store_id: str, hours: int = 24) -> dict[str, Any]:
+    """Send payment reminders to customers with abandoned orders older than the given hours."""
+    try:
+        from app.agent.notifications import notify_customer_recovery
+        from app.models.commerce import Store
+        from app.services.order import OrderService
+
+        async with async_session_factory() as db:
+            store = await db.get(Store, UUID(store_id))
+            if store is None:
+                return {"success": False, "message": "Toko tidak ditemukan."}
+
+            order_svc = OrderService(db)
+            abandoned = await order_svc.get_abandoned_payments(UUID(store_id), hours=hours)
+
+        if not abandoned:
+            return {"success": True, "message": "Tidak ada pesanan yang menunggu pembayaran.", "data": {"reminded": 0}}
+
+        reminded = 0
+        for order in abandoned:
+            try:
+                await notify_customer_recovery(order, order.customer_phone)
+                reminded += 1
+            except Exception:
+                log.warning("send_payment_reminder_single_failed", order_id=str(order.id))
+
+        return {
+            "success": True,
+            "message": f"Pengingat pembayaran dikirim ke {reminded} pelanggan.",
+            "data": {"reminded": reminded, "total_abandoned": len(abandoned)},
+        }
+    except Exception as e:
+        log.error("tool_send_payment_reminder_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengirim pengingat pembayaran: {e}"}
+
+
+@tool(args_schema=SubmitComplaintInput)
+async def submit_complaint(
+    store_id: str,
+    customer_phone: str,
+    category: str,
+    description: str,
+    order_id: str | None = None,
+) -> dict[str, Any]:
+    """Submit a customer complaint and notify the merchant."""
+    try:
+        from app.services.complaint import ComplaintService
+
+        async with async_session_factory() as db:
+            svc = ComplaintService(db)
+            complaint = await svc.create(
+                store_id=UUID(store_id),
+                customer_phone=customer_phone,
+                category=category,
+                description=description,
+                order_id=UUID(order_id) if order_id else None,
+            )
+
+        return {
+            "success": True,
+            "message": "Komplain berhasil dikirim. Tim kami akan segera menindaklanjuti.",
+            "data": {
+                "complaint_id": str(complaint.id),
+                "category": complaint.category,
+                "status": complaint.status,
+            },
+        }
+    except ValueError as e:
+        log.warning("tool_submit_complaint_validation", error=str(e))
+        return {"success": False, "message": f"Gagal mengirim komplain: {e}"}
+    except Exception as e:
+        log.error("tool_submit_complaint_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengirim komplain: {e}"}
+
+
+@tool(args_schema=SubmitRefundRequestInput)
+async def submit_refund_request(
+    store_id: str,
+    customer_phone: str,
+    order_id: str,
+    reason: str,
+) -> dict[str, Any]:
+    """Submit a refund request and notify the merchant."""
+    try:
+        from app.services.refund import RefundService
+
+        async with async_session_factory() as db:
+            svc = RefundService(db)
+            refund = await svc.create(
+                store_id=UUID(store_id),
+                customer_phone=customer_phone,
+                order_id=UUID(order_id),
+                reason=reason,
+            )
+
+        return {
+            "success": True,
+            "message": "Permintaan refund berhasil dikirim. Tim kami akan segera meninjau.",
+            "data": {
+                "refund_id": str(refund.id),
+                "order_id": str(refund.order_id),
+                "status": refund.status,
+            },
+        }
+    except ValueError as e:
+        log.warning("tool_submit_refund_request_validation", error=str(e))
+        return {"success": False, "message": f"Gagal mengirim permintaan refund: {e}"}
+    except Exception as e:
+        log.error("tool_submit_refund_request_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengirim permintaan refund: {e}"}
+
+
+# ---------------------------------------------------------------------------
+# Insight / history / search tools
+# ---------------------------------------------------------------------------
+
+
+@tool(args_schema=GetLowStockProductsInput)
+async def get_low_stock_products(store_id: str, threshold: int = 5) -> dict[str, Any]:
+    """Return products with stock at or below the given threshold. Notifies merchant of low stock items."""
+    try:
+        from app.agent.notifications import notify_merchant_low_stock
+        from app.models.commerce import Store
+        from app.services.order import OrderService
+
+        async with async_session_factory() as db:
+            store = await db.get(Store, UUID(store_id))
+            if store is None:
+                return {"success": False, "message": "Toko tidak ditemukan."}
+
+            order_svc = OrderService(db)
+            products = await order_svc.get_inventory_insight(UUID(store_id), threshold=threshold)
+
+        if not products:
+            return {"success": True, "message": "Semua produk masih memiliki stok yang cukup.", "data": []}
+
+        items = [
+            {
+                "product_id": str(p.id),
+                "name": p.name,
+                "stock": p.stock,
+                "price": int(p.price),
+                "price_display": _format_rupiah(p.price),
+            }
+            for p in products
+        ]
+
+        # Notify merchant about low-stock products
+        for product in products:
+            try:
+                await notify_merchant_low_stock(product, store)
+            except Exception:
+                log.warning("low_stock_notify_failed", product_id=str(product.id))
+
+        return {
+            "success": True,
+            "message": f"Ditemukan {len(items)} produk dengan stok rendah (≤{threshold}).",
+            "data": items,
+        }
+    except Exception as e:
+        log.error("tool_get_low_stock_products_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengambil data stok rendah: {e}"}
+
+
+@tool(args_schema=GetDailySummaryInput)
+async def get_daily_summary(store_id: str, date: str | None = None) -> dict[str, Any]:
+    """Get a daily business summary for the store. Optionally specify a date (YYYY-MM-DD)."""
+    try:
+        from datetime import date as date_type
+
+        from app.agent.notifications import notify_merchant_daily_summary
+        from app.models.commerce import Store
+        from app.services.order import OrderService
+
+        target_date = date_type.fromisoformat(date) if date else date_type.today()
+
+        async with async_session_factory() as db:
+            store = await db.get(Store, UUID(store_id))
+            if store is None:
+                return {"success": False, "message": "Toko tidak ditemukan."}
+
+            order_svc = OrderService(db)
+            summary = await order_svc.get_daily_summary(UUID(store_id), target_date)
+
+        revenue_raw = summary.get("revenue", 0)
+        revenue = int(revenue_raw) if isinstance(revenue_raw, int | float) else 0
+        order_count_raw = summary.get("order_count", 0)
+        order_count = int(order_count_raw) if isinstance(order_count_raw, int | float) else 0
+        pending_raw = summary.get("pending_orders", 0)
+        pending_orders = int(pending_raw) if isinstance(pending_raw, int | float) else 0
+        data: dict[str, Any] = {
+            "date": summary.get("date"),
+            "revenue": revenue,
+            "revenue_display": _format_rupiah(revenue),
+            "order_count": order_count,
+            "pending_orders": pending_orders,
+            "bestseller": summary.get("bestseller"),
+        }
+
+        # Send merchant daily summary notification
+        bestseller_name: str | None = None
+        bestseller_raw = summary.get("bestseller")
+        if bestseller_raw and isinstance(bestseller_raw, dict):
+            name_val = bestseller_raw.get("name")
+            bestseller_name = str(name_val) if name_val is not None else None
+        try:
+            await notify_merchant_daily_summary(
+                store,
+                total_revenue=revenue,
+                order_count=order_count,
+                pending_orders=pending_orders,
+                bestseller=bestseller_name,
+            )
+        except Exception:
+            log.warning("daily_summary_notify_failed", store_id=store_id)
+
+        return {"success": True, "message": "Ringkasan harian berhasil diambil.", "data": data}
+    except Exception as e:
+        log.error("tool_get_daily_summary_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengambil ringkasan harian: {e}"}
+
+
+@tool(args_schema=GetCustomerOrderHistoryInput)
+async def get_customer_order_history(
+    store_id: str,
+    customer_phone: str,
+    limit: int = 10,
+) -> dict[str, Any]:
+    """Return a customer's order history for a given store."""
+    try:
+        from app.services.order import OrderService
+
+        async with async_session_factory() as db:
+            svc = OrderService(db)
+            orders = await svc.get_customer_history(UUID(store_id), customer_phone, limit=limit)
+
+        if not orders:
+            return {
+                "success": True,
+                "message": "Belum ada riwayat pesanan untuk nomor ini.",
+                "data": {"customer_phone": customer_phone, "orders": []},
+            }
+
+        order_summaries = [
+            {
+                "order_id": str(o.id),
+                "total": int(o.total),
+                "total_display": _format_rupiah(o.total),
+                "status": o.status,
+                "created_at": str(o.created_at),
+                "items": o.items,
+            }
+            for o in orders
+        ]
+        return {
+            "success": True,
+            "message": f"Ditemukan {len(order_summaries)} pesanan.",
+            "data": {"customer_phone": customer_phone, "orders": order_summaries},
+        }
+    except Exception as e:
+        log.error("tool_get_customer_order_history_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengambil riwayat pesanan: {e}"}
+
+
+@tool(args_schema=SearchProductsSemanticInput)
+async def search_products_semantic(
+    store_id: str,
+    query: str,
+    limit: int = 10,
+) -> dict[str, Any]:
+    """Search products using semantic vector similarity. Falls back to keyword search if RAG is unavailable."""
+    try:
+        from app.services.product import ProductService
+
+        async with async_session_factory() as db:
+            svc = ProductService(db)
+            results = await svc.search_semantic_products(query, UUID(store_id), limit=limit)
+
+        if not results:
+            # Fallback to keyword search
+            keywords = query.lower().split()
+            async with async_session_factory() as db:
+                svc = ProductService(db)
+                products = await svc.search_by_keywords(UUID(store_id), keywords, limit=limit)
+
+            if not products:
+                return {"success": True, "message": "Tidak ditemukan produk yang cocok.", "data": []}
+
+            keyword_items: list[dict[str, Any]] = [
+                {
+                    "product_id": str(p.id),
+                    "name": p.name,
+                    "price": int(p.price),
+                    "price_display": _format_rupiah(p.price),
+                    "stock": p.stock,
+                    "description": p.description,
+                    "image_url": p.image_url,
+                }
+                for p in products
+            ]
+            return {"success": True, "message": f"Ditemukan {len(keyword_items)} produk (pencarian kata kunci).", "data": keyword_items}
+
+        # Semantic results are dicts from RAG
+        semantic_items: list[dict[str, Any]] = []
+        for r in results:
+            metadata_raw = r.get("metadata", {})
+            metadata: dict[str, Any] = metadata_raw if isinstance(metadata_raw, dict) else {}
+            price_val = metadata.get("price", 0)
+            score_val = r.get("score", 0.0)
+            semantic_items.append({
+                "product_id": str(metadata.get("product_id", "")),
+                "name": str(metadata.get("name", "")),
+                "price": int(price_val) if isinstance(price_val, int | float) else 0,
+                "description": str(r.get("text", "")),
+                "score": float(score_val) if isinstance(score_val, int | float) else 0.0,
+            })
+        return {"success": True, "message": f"Ditemukan {len(semantic_items)} produk (pencarian semantik).", "data": semantic_items}
+    except Exception as e:
+        log.error("tool_search_products_semantic_error", error=str(e))
+        return {"success": False, "message": f"Gagal mencari produk secara semantik: {e}"}
+
+
 # Collect all tools for easy registration.
 ALL_TOOLS = [
     search_products,
@@ -576,4 +1412,20 @@ ALL_TOOLS = [
     confirm_payment_notify_merchant,
     verify_order_payment,
     get_order_status,
+    add_to_cart,
+    get_cart,
+    update_cart_item,
+    remove_from_cart,
+    checkout_cart,
+    recommend_products,
+    upsell_product,
+    cross_sell_product,
+    get_active_promotions,
+    send_payment_reminder,
+    submit_complaint,
+    submit_refund_request,
+    get_low_stock_products,
+    get_daily_summary,
+    get_customer_order_history,
+    search_products_semantic,
 ]

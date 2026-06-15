@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Route } from "next";
 import {
   LayoutDashboard,
   Package,
@@ -7,18 +8,30 @@ import {
   Receipt,
   BarChart3,
   BookOpen,
+  Percent,
+  TrendingUp,
 } from "lucide-react";
 
 import { getMe } from "@/lib/auth";
 
 const nav = [
-  { href: "/dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/products" as const, label: "Products", icon: Package },
-  { href: "/dashboard/bank" as const, label: "Bank Account", icon: Building2 },
-  { href: "/dashboard/orders" as const, label: "Orders", icon: Receipt },
-  { href: "/dashboard/analytics" as const, label: "Analytics", icon: BarChart3 },
-  { href: "/dashboard/knowledge" as const, label: "Knowledge", icon: BookOpen },
-] as const;
+  { href: "/dashboard" as Route, label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/products" as Route, label: "Products", icon: Package },
+  {
+    href: "/dashboard/promotions" as Route,
+    label: "Promotions",
+    icon: Percent,
+  },
+  { href: "/dashboard/insights" as Route, label: "Insights", icon: TrendingUp },
+  { href: "/dashboard/bank" as Route, label: "Bank Account", icon: Building2 },
+  { href: "/dashboard/orders" as Route, label: "Orders", icon: Receipt },
+  {
+    href: "/dashboard/analytics" as Route,
+    label: "Analytics",
+    icon: BarChart3,
+  },
+  { href: "/dashboard/knowledge" as Route, label: "Knowledge", icon: BookOpen },
+];
 
 export default async function DashboardLayout({
   children,

@@ -60,6 +60,20 @@ export interface KnowledgeEntry {
   created_at: string;
 }
 
+export interface Promotion {
+  id: string;
+  store_id: string;
+  name: string;
+  description: string | null;
+  discount_type: "percentage" | "fixed";
+  discount_value: number;
+  min_quantity: number | null;
+  start_at: string | null;
+  end_at: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface DashboardSummary {
   store_id: string;
   store_name: string;
@@ -68,6 +82,20 @@ export interface DashboardSummary {
   pending_orders: number;
   product_count: number;
   bestseller: Record<string, unknown> | null;
+}
+
+export interface DailySummary {
+  date: string;
+  store_id: string;
+  revenue: number;
+  order_count: number;
+  pending_orders: number;
+  bestseller: Record<string, unknown> | null;
+}
+
+export interface Recommendation {
+  products: Product[];
+  reason: string;
 }
 
 export async function createStore(data: {
@@ -99,7 +127,9 @@ export async function getPublicStore(slug: string): Promise<PublicStore> {
   return apiFetch<PublicStore>(`/stores/${slug}/public`);
 }
 
-export async function updateStore(data: Partial<Omit<Store, "id" | "slug" | "owner_id" | "created_at">>): Promise<Store> {
+export async function updateStore(
+  data: Partial<Omit<Store, "id" | "slug" | "owner_id" | "created_at">>
+): Promise<Store> {
   return apiPatch<Store>("/stores/me", data);
 }
 
@@ -179,4 +209,71 @@ export async function listKnowledge(): Promise<KnowledgeEntry[]> {
 
 export async function deleteKnowledge(entryId: string): Promise<void> {
   return apiDelete(`/stores/me/knowledge/${entryId}`);
+}
+
+// Promotions
+export async function createPromotion(data: {
+  name: string;
+  description?: string;
+  discount_type: "percentage" | "fixed";
+  discount_value: number;
+  min_quantity?: number;
+  start_at?: string;
+  end_at?: string;
+  is_active?: boolean;
+}): Promise<Promotion> {
+  return apiPost<Promotion>("/stores/me/promotions", data);
+}
+
+export async function listPromotions(): Promise<Promotion[]> {
+  return apiFetch<Promotion[]>("/stores/me/promotions");
+}
+
+export async function deletePromotion(promotionId: string): Promise<void> {
+  return apiDelete(`/stores/me/promotions/${promotionId}`);
+}
+
+// Insights
+export async function getOrders(customerPhone?: string): Promise<Order[]> {
+  const path = customerPhone
+    ? `/stores/me/insights/orders?customer_phone=${encodeURIComponent(customerPhone)}`
+    : "/stores/me/insights/orders";
+  return apiFetch<Order[]>(path);
+}
+
+export async function getAbandonedPayments(hours?: number): Promise<Order[]> {
+  const path = hours
+    ? `/stores/me/insights/abandoned?hours=${hours}`
+    : "/stores/me/insights/abandoned";
+  return apiFetch<Order[]>(path);
+}
+
+export async function getDailySummary(date: string): Promise<DailySummary> {
+  return apiFetch<DailySummary>(
+    `/stores/me/insights/daily-summary?target_date=${date}`
+  );
+}
+
+export async function getLowStockInventory(
+  threshold?: number
+): Promise<Product[]> {
+  const path = threshold
+    ? `/stores/me/insights/inventory?threshold=${threshold}`
+    : "/stores/me/insights/inventory";
+  return apiFetch<Product[]>(path);
+}
+
+export async function getRecommendations(
+  customerPhone?: string,
+  keywords?: string[],
+  limit?: number
+): Promise<Recommendation> {
+  const params = new URLSearchParams();
+  if (customerPhone) params.set("customer_phone", customerPhone);
+  if (keywords) keywords.forEach((k) => params.append("keywords", k));
+  if (limit) params.set("limit", String(limit));
+  const query = params.toString();
+  return apiFetch<Recommendation>(
+    `/stores/me/insights/recommendations${query ? `?${query}` : ""}`
+  );
 }

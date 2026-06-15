@@ -28,6 +28,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app() -> FastAPI:
+    config = get_config()
     app = FastAPI(
         title="Core API",
         description="AI Chat Core API Server",
@@ -37,7 +38,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=config.cors.origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

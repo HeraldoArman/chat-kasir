@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import structlog
 
-from app.models.commerce import Order, Store
+from app.models.commerce import Complaint, Order, Product, RefundRequest, Store
 from app.services.gowa import GowaClient, GowaClientError
 
 log = structlog.get_logger()
@@ -74,3 +74,102 @@ async def notify_customer_payment_confirmed(order: Order, customer_phone: str) -
         await GowaClient().send_text_message(phone=customer_phone, message=message)
     except GowaClientError:
         log.warning("notify_customer_payment_confirmed_failed", order_id=str(order.id))
+
+
+async def notify_customer_recovery(order: Order, customer_phone: str) -> None:
+    """Remind a customer about an unpaid order."""
+    message = (
+        f"⏰ Hai! Pesanan Anda {order.id} masih menunggu pembayaran.\n\n"
+        f"Total: Rp {int(order.total):,}".replace(",", ".")
+        + "\n\nJika sudah transfer, balas 'sudah bayar'. "
+        "Butuh bantuan? Balas saja pesan ini."
+    )
+    try:
+        await GowaClient().send_text_message(phone=customer_phone, message=message)
+    except GowaClientError:
+        log.warning("notify_customer_recovery_failed", order_id=str(order.id))
+
+
+async def notify_merchant_complaint(complaint: Complaint, store: Store) -> None:
+    """Alert merchant about a new customer complaint."""
+    if not store.whatsapp_number:
+        log.warning("merchant_whatsapp_missing", store_id=str(store.id))
+        return
+
+    order_ref = f"Pesanan: {complaint.order_id}" if complaint.order_id else "Tanpa pesanan"
+    message = (
+        f"⚠️ Komplain baru dari {complaint.customer_phone}\n\n"
+        f"Kategori: {complaint.category}\n"
+        f"{order_ref}\n\n"
+        f"Pesan:\n{complaint.description}"
+    )
+    try:
+        await GowaClient().send_text_message(phone=store.whatsapp_number, message=message)
+    except GowaClientError:
+        log.warning("notify_merchant_complaint_failed", complaint_id=str(complaint.id))
+
+
+async def notify_merchant_refund(refund: RefundRequest, store: Store) -> None:
+    """Alert merchant about a refund request."""
+    if not store.whatsapp_number:
+        log.warning("merchant_whatsapp_missing", store_id=str(store.id))
+        return
+
+    message = (
+        f"🔄 Permintaan refund dari {refund.customer_phone}\n\n"
+        f"Pesanan: {refund.order_id}\n"
+        f"Alasan:\n{refund.reason}"
+    )
+    try:
+        await GowaClient().send_text_message(phone=store.whatsapp_number, message=message)
+    except GowaClientError:
+        log.warning("notify_merchant_refund_failed", refund_id=str(refund.id))
+
+
+async def notify_merchant_low_stock(product: Product, store: Store) -> None:
+    """Alert merchant when a product is running low on stock."""
+    if not store.whatsapp_number:
+        log.warning("merchant_whatsapp_missing", store_id=str(store.id))
+        return
+
+    stock = product.stock if product.stock is not None else 0
+    message = (
+        f"📉 Stok produk hampir habis!\n\n"
+        f"Produk: {product.name}\n"
+        f"Sisa stok: {stock}\n\n"
+        f"Segera restock agar tidak kehabisan."
+    )
+    try:
+        await GowaClient().send_text_message(phone=store.whatsapp_number, message=message)
+    except GowaClientError:
+        log.warning("notify_merchant_low_stock_failed", product_id=str(product.id))
+
+
+async def notify_merchant_daily_summary(
+    store: Store,
+    total_revenue: int,
+    order_count: int,
+    pending_orders: int,
+    bestseller: str | None,
+) -> None:
+    """Send merchant a daily summary via WhatsApp."""
+    if not store.whatsapp_number:
+        log.warning("merchant_whatsapp_missing", store_id=str(store.id))
+        return
+
+    lines = [
+        "📊 Ringkasan Harian",
+        "",
+        f"Omzet: Rp {total_revenue:,}".replace(",", "."),
+        f"Total pesanan: {order_count}",
+        f"Menunggu pembayaran: {pending_orders}",
+    ]
+    if bestseller:
+        lines.append(f"Produk terlaris: {bestseller}")
+    if pending_orders > 0:
+        lines.append("\nJangan lupa follow up pelanggan yang belum bayar.")
+    message = "\n".join(lines)
+    try:
+        await GowaClient().send_text_message(phone=store.whatsapp_number, message=message)
+    except GowaClientError:
+        log.warning("notify_merchant_daily_summary_failed", store_id=str(store.id))

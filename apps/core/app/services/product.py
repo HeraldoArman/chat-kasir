@@ -1,12 +1,20 @@
 """Product CRUD service."""
 
+from __future__ import annotations
+
 from uuid import UUID
 
+import structlog
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_config
 from app.models.commerce import Product, Store
 from app.schemas.commerce import ProductCreate, ProductUpdate
+from app.services.embedding import EmbeddingService
+from app.services.rag import RAGService
+
+log = structlog.get_logger()
 
 
 class ProductService:
@@ -32,9 +40,7 @@ class ProductService:
         self, store_id: UUID, keywords: list[str], limit: int = 10
     ) -> list[Product]:
         """Return active products whose name or description matches any keyword."""
-        query = select(Product).where(
-            Product.store_id == store_id, Product.is_active.is_(True)
-        )
+        query = select(Product).where(Product.store_id == store_id, Product.is_active.is_(True))
         if keywords:
             filters = []
             for kw in keywords:
@@ -51,9 +57,7 @@ class ProductService:
 
     async def list_by_store(self, store_id: UUID) -> list[Product]:
         result = await self.db.execute(
-            select(Product)
-            .where(Product.store_id == store_id)
-            .order_by(Product.created_at.desc())
+            select(Product).where(Product.store_id == store_id).order_by(Product.created_at.desc())
         )
         return list(result.scalars().all())
 
@@ -76,6 +80,18 @@ class ProductService:
         )
         return list(result.scalars().all())
 
+    async def get_low_stock(self, store_id: UUID, threshold: int = 5) -> list[Product]:
+        result = await self.db.execute(
+            select(Product)
+            .where(
+                Product.store_id == store_id,
+                Product.is_active.is_(True),
+                Product.stock <= threshold,
+            )
+            .order_by(Product.stock.asc())
+        )
+        return list(result.scalars().all())
+
     def build_search_text(self, product: Product) -> str:
         """Build a single searchable text from a product."""
         parts = [product.name]
@@ -85,3 +101,27 @@ class ProductService:
         if product.stock is not None:
             parts.append(f"Stok: {product.stock}")
         return " | ".join(parts)
+
+    async def search_semantic_products(
+        self, query: str, store_id: UUID, limit: int = 10
+    ) -> list[dict[str, object]]:
+        """Semantic search for products via RAG vector similarity.
+
+        Falls back to empty results if Qdrant is unavailable.
+        """
+        config = get_config()
+        if not config.rag.enabled or not config.rag.qdrant_url:
+            return []
+
+        try:
+            embedding = EmbeddingService(model_name=config.rag.embedding_model)
+            rag = RAGService(config=config.rag, embedding_service=embedding)
+            results = await rag.retrieve_with_filter(
+                query=query,
+                filters={"store_id": str(store_id), "doc_type": "product"},
+                top_k=limit,
+            )
+            return results
+        except Exception as e:
+            log.warning("semantic_product_search_failed", store_id=str(store_id), error=str(e))
+            return []

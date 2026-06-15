@@ -2,7 +2,8 @@
 
 import { cookies } from "next/headers";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
 export interface LoginInput {
   username: string;
@@ -66,7 +67,9 @@ export async function login(input: LoginInput): Promise<AuthResponse> {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: "Login failed" }));
+    const error = await response
+      .json()
+      .catch(() => ({ detail: "Login failed" }));
     throw new Error(error.detail ?? "Login failed");
   }
 
@@ -85,7 +88,9 @@ export async function register(input: RegisterInput): Promise<User> {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: "Registration failed" }));
+    const error = await response
+      .json()
+      .catch(() => ({ detail: "Registration failed" }));
     throw new Error(error.detail ?? "Registration failed");
   }
 

@@ -10,7 +10,6 @@ import {
   Clock,
 } from "lucide-react";
 
-import { Button } from "@chat-kasir/ui/components/button";
 import {
   Card,
   CardContent,
@@ -25,7 +24,11 @@ const nav = [
   { href: "/dashboard/products" as const, label: "Products", icon: Package },
   { href: "/dashboard/bank" as const, label: "Bank Account", icon: Building2 },
   { href: "/dashboard/orders" as const, label: "Orders", icon: Receipt },
-  { href: "/dashboard/analytics" as const, label: "Analytics", icon: BarChart3 },
+  {
+    href: "/dashboard/analytics" as const,
+    label: "Analytics",
+    icon: BarChart3,
+  },
   { href: "/dashboard/knowledge" as const, label: "Knowledge", icon: BookOpen },
 ] as const;
 
@@ -142,8 +145,6 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </div>
-
-
     </div>
   );
 }

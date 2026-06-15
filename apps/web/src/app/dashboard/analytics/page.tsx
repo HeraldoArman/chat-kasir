@@ -21,7 +21,9 @@ export default function AnalyticsPage() {
     void getDashboardSummary()
       .then((data) => setSummary(data))
       .catch((error) => {
-        toast.error(error instanceof Error ? error.message : "Failed to load analytics");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to load analytics"
+        );
       })
       .finally(() => setLoading(false));
   }, []);

@@ -4,7 +4,8 @@ import { cookies } from "next/headers";
 
 import { ApiError } from "./errors";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
 async function getToken(): Promise<string | null> {
   const cookieStore = await cookies();
@@ -29,7 +30,9 @@ export async function apiFetch<T>(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: "Request failed" }));
+    const error = await response
+      .json()
+      .catch(() => ({ detail: "Request failed" }));
     throw new ApiError(error.detail ?? "Request failed", response.status);
   }
 
@@ -63,7 +66,9 @@ export async function apiDelete(path: string): Promise<void> {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: "Request failed" }));
+    const error = await response
+      .json()
+      .catch(() => ({ detail: "Request failed" }));
     throw new ApiError(error.detail ?? "Request failed", response.status);
   }
 }

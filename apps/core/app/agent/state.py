@@ -40,3 +40,4 @@ class AgentState(TypedDict, total=False):
     error: str
     tool_result: dict[str, Any]
     response_text: str
+    recommendations: list[dict[str, Any]]

@@ -46,14 +46,14 @@ def get_rag_service() -> RAGService:
 @router.post("/ingest")
 async def ingest_documents(request: IngestRequest) -> dict[str, str | int]:
     service = get_rag_service()
-    service.add_documents(request.texts, request.metadata)
+    await service.add_documents(request.texts, request.metadata)
     return {"status": "ok", "documents_ingested": len(request.texts)}
 
 
 @router.post("/query", response_model=QueryResponse)
 async def query_rag(request: QueryRequest) -> QueryResponse:
     service = get_rag_service()
-    results = service.retrieve(request.query, request.top_k)
+    results = await service.retrieve(request.query, request.top_k)
     return QueryResponse(
         chunks=[RetrievedChunk(text=r["text"], score=r["score"], metadata=r["metadata"]) for r in results]
     )

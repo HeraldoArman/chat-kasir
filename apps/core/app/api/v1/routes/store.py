@@ -138,7 +138,7 @@ async def create_product(
     store = await service.get_by_owner(current_user.id)
     store = _ensure_store_owner(store, current_user)
     product = await ProductService(db).create(store, data)
-    index_product(product)
+    await index_product(product)
     return product
 
 
@@ -169,7 +169,7 @@ async def update_product(
     if product is None or product.store_id != store.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
     updated = await product_service.update(product, data)
-    index_product(updated)
+    await index_product(updated)
     return updated
 
 
@@ -266,7 +266,7 @@ async def create_knowledge(
     store = await service.get_by_owner(current_user.id)
     store = _ensure_store_owner(store, current_user)
     entry = await KnowledgeBaseService(db).create(store, data)
-    index_knowledge(entry)
+    await index_knowledge(entry)
     return entry
 
 

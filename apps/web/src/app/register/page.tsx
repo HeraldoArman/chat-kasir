@@ -19,7 +19,13 @@ import { Input } from "@chat-kasir/ui/components/input";
 import { Label } from "@chat-kasir/ui/components/label";
 import { login, register } from "@/lib/auth";
 
-function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+function FadeIn({
+  children,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 32 }}
@@ -57,7 +63,7 @@ export default function RegisterPage() {
         router.push("/onboarding");
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Registration failed",
+          error instanceof Error ? error.message : "Registration failed"
         );
       }
     });
@@ -72,11 +78,11 @@ export default function RegisterPage() {
       {/* Warm ambient glow — matches landing page CTA pattern */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -right-32 size-[32rem] rounded-full bg-primary/5 blur-3xl dark:bg-primary/10"
+        className="bg-primary/5 dark:bg-primary/10 pointer-events-none absolute -top-32 -right-32 size-[32rem] rounded-full blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-40 -left-40 size-[28rem] rounded-full bg-primary/5 blur-3xl dark:bg-primary/10"
+        className="bg-primary/5 dark:bg-primary/10 pointer-events-none absolute -bottom-40 -left-40 size-[28rem] rounded-full blur-3xl"
       />
 
       <FadeIn>

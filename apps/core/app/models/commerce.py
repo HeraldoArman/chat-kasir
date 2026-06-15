@@ -52,6 +52,18 @@ class Store(Base):
     knowledge_entries: Mapped[list["KnowledgeBase"]] = relationship(
         "KnowledgeBase", back_populates="store", lazy="selectin", cascade="all, delete-orphan"
     )
+    carts: Mapped[list["Cart"]] = relationship(
+        "Cart", lazy="selectin", cascade="all, delete-orphan"
+    )
+    promotions: Mapped[list["Promotion"]] = relationship(
+        "Promotion", lazy="selectin", cascade="all, delete-orphan"
+    )
+    complaints: Mapped[list["Complaint"]] = relationship(
+        "Complaint", lazy="selectin", cascade="all, delete-orphan"
+    )
+    refund_requests: Mapped[list["RefundRequest"]] = relationship(
+        "RefundRequest", lazy="selectin", cascade="all, delete-orphan"
+    )
 
 
 class Product(Base):
@@ -128,3 +140,103 @@ class KnowledgeBase(Base):
     store: Mapped[Store] = relationship(
         "Store", back_populates="knowledge_entries", lazy="selectin"
     )
+
+
+class Cart(Base):
+    __tablename__ = "carts"
+
+    id: Mapped[UuidType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    store_id: Mapped[UuidType] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("stores.id", ondelete="CASCADE"), nullable=False
+    )
+    customer_phone: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), onupdate=func.now(), nullable=True
+    )
+
+    store: Mapped[Store] = relationship("Store", lazy="selectin")
+    items: Mapped[list["CartItem"]] = relationship(
+        "CartItem", back_populates="cart", lazy="selectin", cascade="all, delete-orphan"
+    )
+
+
+class CartItem(Base):
+    __tablename__ = "cart_items"
+
+    id: Mapped[UuidType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    cart_id: Mapped[UuidType] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("carts.id", ondelete="CASCADE"), nullable=False
+    )
+    product_id: Mapped[UuidType] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(150), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(12, 0), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), onupdate=func.now(), nullable=True
+    )
+
+    cart: Mapped[Cart] = relationship("Cart", back_populates="items", lazy="selectin")
+    product: Mapped[Product] = relationship("Product", lazy="selectin")
+
+
+class Promotion(Base):
+    __tablename__ = "promotions"
+
+    id: Mapped[UuidType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    store_id: Mapped[UuidType] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("stores.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(150), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    discount_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    discount_value: Mapped[Decimal] = mapped_column(Numeric(12, 0), nullable=False)
+    min_quantity: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    start_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    store: Mapped[Store] = relationship("Store", lazy="selectin")
+
+
+class Complaint(Base):
+    __tablename__ = "complaints"
+
+    id: Mapped[UuidType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    store_id: Mapped[UuidType] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("stores.id", ondelete="CASCADE"), nullable=False
+    )
+    customer_phone: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    order_id: Mapped[UuidType | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orders.id", ondelete="SET NULL"), nullable=True
+    )
+    category: Mapped[str] = mapped_column(String(50), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="open")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    store: Mapped[Store] = relationship("Store", lazy="selectin")
+    order: Mapped[Order | None] = relationship("Order", lazy="selectin")
+
+
+class RefundRequest(Base):
+    __tablename__ = "refund_requests"
+
+    id: Mapped[UuidType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    store_id: Mapped[UuidType] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("stores.id", ondelete="CASCADE"), nullable=False
+    )
+    customer_phone: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    order_id: Mapped[UuidType] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False
+    )
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    store: Mapped[Store] = relationship("Store", lazy="selectin")
+    order: Mapped[Order] = relationship("Order", lazy="selectin")

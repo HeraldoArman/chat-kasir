@@ -36,7 +36,9 @@ export default function KnowledgePage() {
       const data = await listKnowledge();
       setEntries(data);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load knowledge");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load knowledge"
+      );
     } finally {
       setLoading(false);
     }
@@ -60,7 +62,9 @@ export default function KnowledgePage() {
         setForm({ category: "", question: "", answer: "" });
         await load();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to add knowledge");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to add knowledge"
+        );
       }
     });
   };
@@ -72,7 +76,9 @@ export default function KnowledgePage() {
         toast.success("Entry removed");
         await load();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to remove");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to remove"
+        );
       }
     });
   };
@@ -99,7 +105,10 @@ export default function KnowledgePage() {
                   id="category"
                   value={form.category}
                   onChange={(event) =>
-                    setForm((previous) => ({ ...previous, category: event.target.value }))
+                    setForm((previous) => ({
+                      ...previous,
+                      category: event.target.value,
+                    }))
                   }
                   placeholder="FAQ, Policy, Hours..."
                 />
@@ -110,7 +119,10 @@ export default function KnowledgePage() {
                   id="question"
                   value={form.question}
                   onChange={(event) =>
-                    setForm((previous) => ({ ...previous, question: event.target.value }))
+                    setForm((previous) => ({
+                      ...previous,
+                      question: event.target.value,
+                    }))
                   }
                   placeholder="What are your opening hours?"
                 />
@@ -122,13 +134,20 @@ export default function KnowledgePage() {
                   rows={3}
                   value={form.answer}
                   onChange={(event) =>
-                    setForm((previous) => ({ ...previous, answer: event.target.value }))
+                    setForm((previous) => ({
+                      ...previous,
+                      answer: event.target.value,
+                    }))
                   }
                   placeholder="We are open every day from 9 AM to 9 PM."
                   className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-none border bg-transparent px-2.5 py-2 text-xs transition-colors outline-none focus-visible:ring-1"
                 />
               </div>
-              <Button type="submit" className="w-full rounded-full" disabled={isPending}>
+              <Button
+                type="submit"
+                className="w-full rounded-full"
+                disabled={isPending}
+              >
                 {isPending ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : (
@@ -149,7 +168,9 @@ export default function KnowledgePage() {
             <Card className="rounded-3xl border">
               <CardContent className="flex flex-col items-center justify-center gap-3 py-12">
                 <BookOpen className="text-muted-foreground size-10" />
-                <p className="text-muted-foreground">No knowledge entries yet.</p>
+                <p className="text-muted-foreground">
+                  No knowledge entries yet.
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -169,7 +190,9 @@ export default function KnowledgePage() {
                       {entry.question && (
                         <p className="mt-2 font-medium">{entry.question}</p>
                       )}
-                      <p className="text-muted-foreground mt-1 text-sm">{entry.answer}</p>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        {entry.answer}
+                      </p>
                     </div>
                     <Button
                       size="icon-xs"

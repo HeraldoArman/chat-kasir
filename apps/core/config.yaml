@@ -19,3 +19,20 @@ server:
 logging:
   level: "INFO"
   format: "json"
+
+jwt:
+  algorithm: "HS256"
+  expire_hours: 24
+
+cors:
+  origins:
+    - "http://localhost:3001"
+
+rag:
+  enabled: true
+  qdrant_url: "http://localhost:6333"
+  qdrant_api_key: ""
+  collection_name: "documents"
+  embedding_model: "BAAI/bge-small-en-v1.5"
+  chunk_size: 500
+  chunk_overlap: 50

@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import yaml
-from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -34,9 +34,35 @@ class LoggingConfig(BaseSettings):
 
 
 class JWTConfig(BaseSettings):
-    secret_key: str = Field(default="", validation_alias="JWT_SECRET_KEY")
+    model_config = SettingsConfigDict(populate_by_name=True)
+
+    secret_key: str = Field(validation_alias="JWT_SECRET_KEY")
     algorithm: str = "HS256"
     expire_hours: int = 24
+
+    @field_validator("secret_key", mode="after")
+    @classmethod
+    def _validate_secret_key(cls, value: str) -> str:
+        if len(value.strip()) < 32:
+            raise ValueError("JWT_SECRET_KEY must be at least 32 characters")
+        return value
+
+
+class CORSConfig(BaseSettings):
+    model_config = SettingsConfigDict(populate_by_name=True)
+
+    origins: list[str] = Field(default=["http://localhost:3001"], validation_alias="CORS_ORIGINS")
+
+    @field_validator("origins", mode="before")
+    @classmethod
+    def _parse_origins(cls, value: object) -> list[str]:
+        if isinstance(value, list):
+            return [str(origin).strip() for origin in value if str(origin).strip()]
+        if isinstance(value, str):
+            if not value.strip():
+                return ["http://localhost:3001"]
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
+        return ["http://localhost:3001"]
 
 
 class DatabaseConfig(BaseSettings):
@@ -44,8 +70,10 @@ class DatabaseConfig(BaseSettings):
 
 
 class RAGConfig(BaseSettings):
-    enabled: bool = False
-    qdrant_url: str = Field(default="", validation_alias="QDRANT_URL")
+    model_config = SettingsConfigDict(populate_by_name=True)
+
+    enabled: bool = True
+    qdrant_url: str = Field(default="http://localhost:6333", validation_alias="QDRANT_URL")
     qdrant_api_key: str = Field(default="", validation_alias="QDRANT_API_KEY")
     collection_name: str = "documents"
     embedding_model: str = "BAAI/bge-small-en-v1.5"
@@ -65,6 +93,7 @@ class AppConfig(BaseSettings):
     server: ServerConfig = Field(default_factory=ServerConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     jwt: JWTConfig = Field(default_factory=JWTConfig)
+    cors: CORSConfig = Field(default_factory=CORSConfig)
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     rag: RAGConfig = Field(default_factory=RAGConfig)
     gowa: GoWAConfig = Field(default_factory=GoWAConfig)

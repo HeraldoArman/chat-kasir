@@ -2,9 +2,14 @@
 
 from app.models.commerce import (
     BankAccount,
+    Cart,
+    CartItem,
+    Complaint,
     KnowledgeBase,
     Order,
     Product,
+    Promotion,
+    RefundRequest,
     Store,
 )
 from app.models.database import Base
@@ -18,4 +23,9 @@ __all__ = [
     "BankAccount",
     "Order",
     "KnowledgeBase",
+    "Cart",
+    "CartItem",
+    "Promotion",
+    "Complaint",
+    "RefundRequest",
 ]

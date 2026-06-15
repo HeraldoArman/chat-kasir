@@ -35,6 +35,51 @@ INTENT_FALLBACKS: dict[str, str] = {
     "Silakan tanyakan tentang produk, pemesanan, atau pembayaran.",
     "unknown": "Maaf, saya tidak memahami pesan Anda. "
     "Ketik 'menu' untuk melihat produk atau tanyakan langsung.",
+    # --- Cart ---
+    "add_to_cart": "Maaf, saya tidak bisa menambahkan item ke keranjang saat ini. "
+    "Silakan coba lagi nanti.",
+    "view_cart": "Maaf, saya tidak bisa menampilkan keranjang saat ini. "
+    "Silakan coba lagi nanti.",
+    "update_cart": "Maaf, saya tidak bisa mengubah keranjang saat ini. "
+    "Silakan coba lagi nanti.",
+    "remove_from_cart": "Maaf, saya tidak bisa menghapus item dari keranjang saat ini. "
+    "Silakan coba lagi nanti.",
+    "checkout_cart": "Maaf, saya tidak bisa memproses checkout saat ini. "
+    "Silakan coba lagi nanti atau hubungi toko langsung.",
+    # --- Recommendations ---
+    "recommend_products": "Maaf, saya tidak bisa memberikan rekomendasi saat ini. "
+    "Silakan coba beberapa saat lagi.",
+    "upsell": "Maaf, saya tidak bisa memberikan rekomendasi produk premium saat ini. "
+    "Silakan coba beberapa saat lagi.",
+    "cross_sell": "Maaf, saya tidak bisa memberikan rekomendasi produk pelengkap saat ini. "
+    "Silakan coba beberapa saat lagi.",
+    # --- Promotions & reminders ---
+    "active_promotions": "Maaf, informasi promo tidak tersedia saat ini. "
+    "Silakan coba lagi nanti.",
+    "payment_reminder": "Maaf, saya tidak bisa mengirim pengingat pembayaran saat ini. "
+    "Silakan coba lagi nanti.",
+    # --- Complaints & refunds ---
+    "complaint_intake": "Maaf, saya tidak bisa menerima keluhan saat ini. "
+    "Silakan hubungi toko langsung untuk menyampaikan keluhan Anda.",
+    "refund_intake": "Maaf, saya tidak bisa memproses permintaan refund saat ini. "
+    "Silakan hubungi toko langsung untuk pengembalian dana.",
+    # --- Merchant insights ---
+    "low_stock_insight": "Maaf, data stok rendah tidak tersedia saat ini. "
+    "Silakan coba lagi nanti.",
+    "daily_summary": "Maaf, ringkasan harian tidak tersedia saat ini. "
+    "Silakan coba lagi nanti.",
+    # --- History & search ---
+    "customer_order_history": "Maaf, riwayat pesanan tidak tersedia saat ini. "
+    "Silakan coba lagi nanti.",
+    "semantic_search": "Maaf, pencarian semantik tidak tersedia saat ini. "
+    "Silakan coba beberapa saat lagi.",
+    # --- Payment confirmations ---
+    "payment_confirmation": "Maaf, konfirmasi pembayaran tidak dapat diproses saat ini. "
+    "Silakan coba lagi nanti.",
+    "order_status": "Maaf, status pesanan tidak tersedia saat ini. "
+    "Silakan coba lagi nanti.",
+    "verify_payment": "Maaf, verifikasi pembayaran tidak tersedia saat ini. "
+    "Silakan coba lagi nanti.",
 }
 
 # Fallback for edge cases.
@@ -55,6 +100,20 @@ EDGE_CASE_FALLBACKS: dict[str, str] = {
     "order_not_found": "Pesanan tidak ditemukan.",
     "already_verified": "Pesanan sudah diverifikasi sebelumnya atau tidak dapat diverifikasi.",
     "unauthorized_merchant": "Maaf, fitur ini hanya tersedia untuk pemilik toko.",
+    # --- Cart edge cases ---
+    "cart_empty": "Keranjang Anda kosong. Silakan tambahkan produk terlebih dahulu.",
+    "product_not_in_cart": "Produk tersebut tidak ditemukan di keranjang Anda.",
+    "product_not_found": "Produk yang Anda cari tidak ditemukan di katalog.",
+    # --- Promotion edge cases ---
+    "no_active_promotions": "Saat ini tidak ada promo aktif di toko ini.",
+    # --- Complaint & refund edge cases ---
+    "complaint_submitted": "Keluhan Anda telah dicatat. Tim kami akan segera menghubungi Anda.",
+    "refund_submitted": "Permintaan refund Anda telah dicatat. Proses refund membutuhkan waktu 3-5 hari kerja.",
+    # --- Insight edge cases ---
+    "no_low_stock": "Tidak ada produk dengan stok rendah saat ini. Stok semua produk aman.",
+    "no_daily_data": "Tidak ada data penjualan untuk tanggal tersebut.",
+    # --- Recommendation edge cases ---
+    "no_recommendations": "Maaf, tidak ada rekomendasi yang tersedia saat ini.",
 }
 
 

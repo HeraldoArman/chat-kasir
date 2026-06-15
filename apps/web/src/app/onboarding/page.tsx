@@ -53,7 +53,9 @@ export default function OnboardingPage() {
         toast.success("Store created!");
         router.push("/dashboard");
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to create store");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to create store"
+        );
       }
     });
   };
@@ -66,7 +68,9 @@ export default function OnboardingPage() {
             <div className="bg-primary text-primary-foreground mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl">
               <Store className="size-6" />
             </div>
-            <CardTitle className="text-2xl font-bold tracking-tight">Set up your store</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight">
+              Set up your store
+            </CardTitle>
             <CardDescription>
               Tell customers what you sell and how to reach you.
             </CardDescription>

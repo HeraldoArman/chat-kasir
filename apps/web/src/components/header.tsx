@@ -59,7 +59,11 @@ export default function Header() {
             {user ? (
               <>
                 <Link href="/dashboard" className="hidden md:block">
-                  <Button size="sm" variant="outline" className="rounded-full px-4">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full px-4"
+                  >
                     Dashboard
                   </Button>
                 </Link>
@@ -75,7 +79,11 @@ export default function Header() {
             ) : (
               <>
                 <Link href="/login" className="hidden md:block">
-                  <Button size="sm" variant="ghost" className="rounded-full px-4">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-full px-4"
+                  >
                     Sign in
                   </Button>
                 </Link>
@@ -120,7 +128,11 @@ export default function Header() {
                 {user ? (
                   <div className="flex items-center gap-2">
                     <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
-                      <Button size="sm" variant="outline" className="rounded-full px-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full px-4"
+                      >
                         Dashboard
                       </Button>
                     </Link>

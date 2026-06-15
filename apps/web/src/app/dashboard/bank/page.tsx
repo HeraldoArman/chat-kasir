@@ -37,7 +37,9 @@ export default function BankPage() {
       const data = await listBankAccounts();
       setAccounts(data);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load accounts");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load accounts"
+      );
     } finally {
       setLoading(false);
     }
@@ -49,7 +51,11 @@ export default function BankPage() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!form.bank_name.trim() || !form.account_number.trim() || !form.account_holder_name.trim()) {
+    if (
+      !form.bank_name.trim() ||
+      !form.account_number.trim() ||
+      !form.account_holder_name.trim()
+    ) {
       toast.error("All bank fields are required");
       return;
     }
@@ -66,7 +72,9 @@ export default function BankPage() {
         });
         await load();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to add account");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to add account"
+        );
       }
     });
   };
@@ -78,7 +86,9 @@ export default function BankPage() {
         toast.success("Account removed");
         await load();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to remove account");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to remove account"
+        );
       }
     });
   };
@@ -95,7 +105,9 @@ export default function BankPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="rounded-3xl border">
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Add bank account</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Add bank account
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-3">
@@ -105,7 +117,10 @@ export default function BankPage() {
                   id="bank_name"
                   value={form.bank_name}
                   onChange={(event) =>
-                    setForm((previous) => ({ ...previous, bank_name: event.target.value }))
+                    setForm((previous) => ({
+                      ...previous,
+                      bank_name: event.target.value,
+                    }))
                   }
                   placeholder="BCA"
                 />
@@ -138,7 +153,11 @@ export default function BankPage() {
                   placeholder="Budi Santoso"
                 />
               </div>
-              <Button type="submit" className="w-full rounded-full" disabled={isPending}>
+              <Button
+                type="submit"
+                className="w-full rounded-full"
+                disabled={isPending}
+              >
                 {isPending ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : (

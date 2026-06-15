@@ -38,7 +38,9 @@ export default function ProductsPage() {
       const data = await listProducts();
       setProducts(data);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load products");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load products"
+      );
     } finally {
       setLoading(false);
     }
@@ -66,10 +68,18 @@ export default function ProductsPage() {
           image_url: form.image_url || undefined,
         });
         toast.success("Product added");
-        setForm({ name: "", description: "", price: "", stock: "", image_url: "" });
+        setForm({
+          name: "",
+          description: "",
+          price: "",
+          stock: "",
+          image_url: "",
+        });
         await load();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to add product");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to add product"
+        );
       }
     });
   };
@@ -81,7 +91,9 @@ export default function ProductsPage() {
         toast.success("Product removed");
         await load();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to remove product");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to remove product"
+        );
       }
     });
   };
@@ -90,9 +102,7 @@ export default function ProductsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Products</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage your store catalog.
-        </p>
+        <p className="text-muted-foreground mt-1">Manage your store catalog.</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -108,7 +118,10 @@ export default function ProductsPage() {
                   id="name"
                   value={form.name}
                   onChange={(event) =>
-                    setForm((previous) => ({ ...previous, name: event.target.value }))
+                    setForm((previous) => ({
+                      ...previous,
+                      name: event.target.value,
+                    }))
                   }
                   placeholder="Oli Motor Beat"
                 />
@@ -175,7 +188,11 @@ export default function ProductsPage() {
                   placeholder="https://example.com/image.jpg"
                 />
               </div>
-              <Button type="submit" className="w-full rounded-full" disabled={isPending}>
+              <Button
+                type="submit"
+                className="w-full rounded-full"
+                disabled={isPending}
+              >
                 {isPending ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : (

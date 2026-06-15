@@ -40,6 +40,23 @@ VALID_INTENTS = [
     "verify_payment",
     "greeting",
     "unknown",
+    # --- New commerce intents ---
+    "add_to_cart",
+    "view_cart",
+    "update_cart",
+    "remove_from_cart",
+    "checkout_cart",
+    "recommend_products",
+    "upsell",
+    "cross_sell",
+    "active_promotions",
+    "payment_reminder",
+    "complaint_intake",
+    "refund_intake",
+    "low_stock_insight",
+    "daily_summary",
+    "customer_order_history",
+    "semantic_search",
 ]
 
 # Intent → tool name mapping
@@ -52,6 +69,23 @@ INTENT_TOOL_MAP: dict[str, str] = {
     "faq": "answer_faq",
     "merchant_analytics": "get_merchant_analytics",
     "verify_payment": "verify_order_payment",
+    # --- New commerce intent → tool mappings ---
+    "add_to_cart": "add_to_cart",
+    "view_cart": "get_cart",
+    "update_cart": "update_cart_item",
+    "remove_from_cart": "remove_from_cart",
+    "checkout_cart": "checkout_cart",
+    "recommend_products": "recommend_products",
+    "upsell": "upsell_product",
+    "cross_sell": "cross_sell_product",
+    "active_promotions": "get_active_promotions",
+    "payment_reminder": "send_payment_reminder",
+    "complaint_intake": "submit_complaint",
+    "refund_intake": "submit_refund_request",
+    "low_stock_insight": "get_low_stock_products",
+    "daily_summary": "get_daily_summary",
+    "customer_order_history": "get_customer_order_history",
+    "semantic_search": "search_products_semantic",
 }
 
 
@@ -158,16 +192,20 @@ async def extract_entities(state: AgentState) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+# Intents that skip tool execution and go directly to response generation.
+_NO_TOOL_INTENTS: frozenset[str] = frozenset({"greeting"})
+
+
 def route_by_intent(state: AgentState) -> Literal["extract_entities", "error_handler", "generate_response"]:
     """Route based on classified intent.
 
-    - ``greeting`` → ``generate_response`` (no tool needed)
+    - ``greeting`` and other no-tool intents → ``generate_response``
     - ``unknown`` → ``error_handler``
     - everything else → ``extract_entities`` then ``execute_tool``
     """
     intent = state.get("intent", "unknown")
 
-    if intent == "greeting":
+    if intent in _NO_TOOL_INTENTS:
         return "generate_response"
     if intent == "unknown":
         return "error_handler"
@@ -195,7 +233,12 @@ async def execute_tool(state: AgentState) -> dict[str, Any]:
     entities = state.get("entities", {})
 
     # Merchant-only guard
-    merchant_only_intents = {"merchant_analytics", "verify_payment"}
+    merchant_only_intents = {
+        "merchant_analytics",
+        "verify_payment",
+        "low_stock_insight",
+        "daily_summary",
+    }
     if intent in merchant_only_intents and not ctx.get("is_merchant", False):
         return {
             "tool_result": {
@@ -249,6 +292,123 @@ async def execute_tool(state: AgentState) -> dict[str, Any]:
         elif tool_name == "get_merchant_analytics":
             result = await tool_fn.ainvoke({"store_id": store_id})
 
+        # --- Cart operations ---
+        elif tool_name == "add_to_cart":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "customer_phone": ctx.get("customer_phone", ""),
+                "product_id": _extract_product_id(state),
+                "quantity": int(entities.get("quantities", [1])[0]) if entities.get("quantities") else 1,
+            })
+
+        elif tool_name == "get_cart":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "customer_phone": ctx.get("customer_phone", ""),
+            })
+
+        elif tool_name == "update_cart_item":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "customer_phone": ctx.get("customer_phone", ""),
+                "cart_item_id": _extract_cart_item_id(state),
+                "quantity": int(entities.get("quantities", [1])[0]) if entities.get("quantities") else 1,
+            })
+
+        elif tool_name == "remove_from_cart":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "customer_phone": ctx.get("customer_phone", ""),
+                "cart_item_id": _extract_cart_item_id(state),
+            })
+
+        elif tool_name == "checkout_cart":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "customer_phone": ctx.get("customer_phone", ""),
+                "customer_name": entities.get("customer_name") or ctx.get("customer_name"),
+                "note": entities.get("note"),
+            })
+
+        # --- Recommendation & promotion ---
+        elif tool_name == "recommend_products":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "customer_phone": ctx.get("customer_phone", ""),
+                "keywords": entities.get("keywords", []),
+                "limit": 5,
+            })
+
+        elif tool_name == "upsell_product":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "product_id": _extract_product_id(state),
+                "customer_phone": ctx.get("customer_phone", ""),
+            })
+
+        elif tool_name == "cross_sell_product":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "product_id": _extract_product_id(state),
+                "customer_phone": ctx.get("customer_phone", ""),
+            })
+
+        elif tool_name == "get_active_promotions":
+            result = await tool_fn.ainvoke({"store_id": store_id})
+
+        # --- Payment & complaints ---
+        elif tool_name == "send_payment_reminder":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "hours": int(entities.get("hours", 24)),
+            })
+
+        elif tool_name == "submit_complaint":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "customer_phone": ctx.get("customer_phone", ""),
+                "category": entities.get("category", "umum"),
+                "description": entities.get("description", "") or _get_last_user_message(state),
+                "order_id": _extract_order_id(state) or None,
+            })
+
+        elif tool_name == "submit_refund_request":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "customer_phone": ctx.get("customer_phone", ""),
+                "reason": entities.get("reason", "") or _get_last_user_message(state),
+                "order_id": _extract_order_id(state),
+            })
+
+        # --- Merchant insights ---
+        elif tool_name == "get_low_stock_products":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "threshold": int(entities.get("threshold", 5)),
+            })
+
+        elif tool_name == "get_daily_summary":
+            date = entities.get("date", "")
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "date": date if isinstance(date, str) else "",
+            })
+
+        elif tool_name == "get_customer_order_history":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "customer_phone": ctx.get("customer_phone", ""),
+                "limit": 10,
+            })
+
+        elif tool_name == "search_products_semantic":
+            message = _get_last_user_message(state)
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "query": message[:500],
+                "limit": 10,
+            })
+
         else:
             result = {"success": False, "message": f"Tool {tool_name} tidak didukung."}
 
@@ -291,6 +451,34 @@ def _extract_order_id(state: AgentState) -> str:
     order_id = entities.get("order_id", "")
     if isinstance(order_id, str) and order_id.strip():
         return order_id.strip()
+
+    message = _get_last_user_message(state)
+    match = re.search(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", message)
+    if match:
+        return match.group(0)
+    return ""
+
+
+def _extract_product_id(state: AgentState) -> str:
+    """Extract a product UUID from entities or the raw user message."""
+    entities = state.get("entities", {})
+    product_id = entities.get("product_id", "")
+    if isinstance(product_id, str) and product_id.strip():
+        return product_id.strip()
+
+    message = _get_last_user_message(state)
+    match = re.search(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", message)
+    if match:
+        return match.group(0)
+    return ""
+
+
+def _extract_cart_item_id(state: AgentState) -> str:
+    """Extract a cart item UUID from entities or the raw user message."""
+    entities = state.get("entities", {})
+    cart_item_id = entities.get("cart_item_id", "")
+    if isinstance(cart_item_id, str) and cart_item_id.strip():
+        return cart_item_id.strip()
 
     message = _get_last_user_message(state)
     match = re.search(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", message)
