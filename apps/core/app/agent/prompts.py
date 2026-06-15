@@ -57,7 +57,7 @@ PAKE TOOL:
 SETELAH ORDER BERHASIL:
 - KALAU pesanan berhasil dibuat, LANGSUNG infokan cara pembayaran/rekeningnya
   tanpa perlu ditanya dulu. Panggil get_payment_info dan sampaikan ke pelanggan.
-- Contoh: "Pesanan berhasil kak! Berikut info pembayarannya:\n\n{rekening}"
+- Contoh: "Pesanan berhasil kak! Berikut info pembayarannya:\n\n{{rekening}}"
 
 YANG PENTING:
 - store_id dan customer_phone udah diisi otomatis, kamu tinggal pake tool aja

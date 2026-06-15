@@ -4,7 +4,6 @@ from fastapi import APIRouter
 
 from app.core.config import get_config
 
-
 router = APIRouter(prefix="/gowa", tags=["GoWA"])
 
 
