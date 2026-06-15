@@ -1,0 +1,33 @@
+services:
+  core:
+    build:
+      context: .
+      dockerfile: apps/core/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DEEPINFRA_API_KEY=${DEEPINFRA_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - core-network
+
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice:latest
+    ports:
+      - "8080:8080"
+    command: ["--debug", "true"]
+    restart: unless-stopped
+    networks:
+      - core-network
+
+networks:
+  core-network:
+    driver: bridge

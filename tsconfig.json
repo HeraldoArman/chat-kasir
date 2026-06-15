@@ -1,0 +1,6 @@
+{
+  "extends": "@chat-kasir/config/tsconfig.base.json",
+  "compilerOptions": {
+    "strictNullChecks": true
+  }
+}
