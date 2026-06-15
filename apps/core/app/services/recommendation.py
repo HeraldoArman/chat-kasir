@@ -185,7 +185,7 @@ class RecommendationService:
     ) -> list[Product]:
         """Use RAGService.retrieve_with_filter to find products semantically."""
         try:
-            results = rag_service.retrieve_with_filter(
+            results = await rag_service.retrieve_with_filter(
                 query=" ".join(keywords),
                 filters={"store_id": str(store_id), "doc_type": "product"},
                 top_k=limit * 2,
