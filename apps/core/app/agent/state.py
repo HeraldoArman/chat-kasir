@@ -1,20 +1,16 @@
-"""Typed state schema for the commerce agent graph."""
+"""Typed state schema for the commerce agent graph.
+
+The ReAct agent uses a minimal state: a message list (appended by each
+node) and a context dict for store/merchant info.
+"""
 
 from __future__ import annotations
 
 import operator
-from typing import Annotated, Any
+from typing import Annotated
 
 from langchain_core.messages import BaseMessage
 from typing_extensions import TypedDict
-
-
-class CartItem(TypedDict):
-    product_id: str
-    name: str
-    quantity: int
-    unit_price: int
-    total_price: int
 
 
 class AgentContext(TypedDict, total=False):
@@ -26,18 +22,11 @@ class AgentContext(TypedDict, total=False):
 
 
 class AgentState(TypedDict, total=False):
-    """State flowing through the commerce agent graph.
+    """State flowing through the ReAct agent graph.
 
     ``messages`` uses ``operator.add`` so each node appends rather than
     overwriting.
     """
 
     messages: Annotated[list[BaseMessage], operator.add]
-    intent: str
-    entities: dict[str, Any]
-    cart: list[CartItem]
     context: AgentContext
-    error: str
-    tool_result: dict[str, Any]
-    response_text: str
-    recommendations: list[dict[str, Any]]

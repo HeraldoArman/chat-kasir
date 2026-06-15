@@ -84,6 +84,7 @@ class RAGConfig(BaseSettings):
 class GoWAConfig(BaseSettings):
     base_url: str = Field(default="http://localhost:8080", validation_alias="GOWA_BASE_URL")
     device_id: str = Field(default="", validation_alias="GOWA_DEVICE_ID")
+    phone: str = Field(default="", validation_alias="GOWA_PHONE")
     webhook_secret: str = Field(default="", validation_alias="GOWA_WEBHOOK_SECRET")
 
 

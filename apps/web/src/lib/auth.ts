@@ -97,6 +97,31 @@ export async function register(input: RegisterInput): Promise<User> {
   return (await response.json()) as User;
 }
 
+export async function updateMe(
+  data: { full_name?: string; whatsapp_number?: string | null },
+): Promise<User> {
+  const token = await getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_BASE}/auth/me`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response
+      .json()
+      .catch(() => ({ detail: "Failed to update profile" }));
+    throw new Error(error.detail ?? "Failed to update profile");
+  }
+
+  return (await response.json()) as User;
+}
+
 export async function getMe(): Promise<User | null> {
   const token = await getToken();
   if (!token) return null;

@@ -67,16 +67,18 @@ services:
       - "8080:3000"
     env_file:
       - apps/core/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command:
       - rest
       - --debug=true
       - --port=3000
-      - --webhook=http://core:8000/api/v1/webhook/gowa
+      - --webhook=http://host.docker.internal:8000/api/v1/webhook/gowa
       - --webhook-secret=${GOWA_WEBHOOK_SECRET}
       - --webhook-events=message
     environment:
       - PORT=3000
-      - WEBHOOK=http://core:8000/api/v1/webhook/gowa
+      - WEBHOOK=http://host.docker.internal:8000/api/v1/webhook/gowa
       - WEBHOOK_SECRET=${GOWA_WEBHOOK_SECRET}
       - WEBHOOK_EVENTS=message
     restart: unless-stopped

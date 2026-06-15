@@ -45,7 +45,9 @@ class ComplaintService:
         self.db.add(complaint)
         await self.db.commit()
         await self.db.refresh(complaint)
-        await notify_merchant_complaint(complaint, store)
+        merchant_phone = store.owner.whatsapp_number or store.whatsapp_number
+        if merchant_phone:
+            await notify_merchant_complaint(complaint, merchant_phone)
         return complaint
 
     async def list(self, store_id: UUID, status: str | None = None, limit: int = 50) -> list[Complaint]:

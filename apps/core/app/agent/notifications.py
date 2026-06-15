@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import structlog
 
-from app.models.commerce import Complaint, Order, Product, RefundRequest, Store
+from app.models.commerce import Complaint, Order, Product, RefundRequest
 from app.services.gowa import GowaClient, GowaClientError
 
 log = structlog.get_logger()
@@ -32,33 +32,30 @@ def format_order_summary(order: Order) -> str:
     return "\n".join(lines)
 
 
-async def notify_merchant_new_order(order: Order, store: Store) -> None:
+async def notify_merchant_new_order(order: Order, merchant_phone: str) -> None:
     """Send a new-order alert to the merchant's WhatsApp number."""
-    if not store.whatsapp_number:
-        log.warning("merchant_whatsapp_missing", store_id=str(store.id))
-        return
-
     summary = format_order_summary(order)
-    message = f"📦 Pesanan baru masuk!\n\n{summary}\n\nBalas 'verifikasi {order.id}' untuk mengkonfirmasi pembayaran."
+    message = (
+        f"📦 Pesanan baru masuk!\n\n{summary}\n\n"
+        f"Balas: `verifikasi {order.id}`\n"
+        f"(kirim pesan tersebut untuk konfirmasi pembayaran)"
+    )
     try:
-        await GowaClient().send_text_message(phone=store.whatsapp_number, message=message)
+        await GowaClient().send_text_message(phone=merchant_phone, message=message)
     except GowaClientError:
         log.warning("notify_merchant_new_order_failed", order_id=str(order.id))
 
 
-async def notify_merchant_payment_confirmation(order: Order, store: Store) -> None:
+async def notify_merchant_payment_confirmation(order: Order, merchant_phone: str) -> None:
     """Ask the merchant to verify a payment for an existing order."""
-    if not store.whatsapp_number:
-        log.warning("merchant_whatsapp_missing", store_id=str(store.id))
-        return
-
     summary = format_order_summary(order)
     message = (
         f"💰 Pelanggan mengonfirmasi transfer untuk pesanan:\n\n{summary}\n\n"
-        f"Balas 'verifikasi {order.id}' setelah transfer masuk."
+        f"Balas: `verifikasi {order.id}`\n"
+        f"(kirim pesan tersebut untuk konfirmasi)"
     )
     try:
-        await GowaClient().send_text_message(phone=store.whatsapp_number, message=message)
+        await GowaClient().send_text_message(phone=merchant_phone, message=message)
     except GowaClientError:
         log.warning("notify_merchant_payment_confirmation_failed", order_id=str(order.id))
 
@@ -90,12 +87,8 @@ async def notify_customer_recovery(order: Order, customer_phone: str) -> None:
         log.warning("notify_customer_recovery_failed", order_id=str(order.id))
 
 
-async def notify_merchant_complaint(complaint: Complaint, store: Store) -> None:
+async def notify_merchant_complaint(complaint: Complaint, merchant_phone: str) -> None:
     """Alert merchant about a new customer complaint."""
-    if not store.whatsapp_number:
-        log.warning("merchant_whatsapp_missing", store_id=str(store.id))
-        return
-
     order_ref = f"Pesanan: {complaint.order_id}" if complaint.order_id else "Tanpa pesanan"
     message = (
         f"⚠️ Komplain baru dari {complaint.customer_phone}\n\n"
@@ -104,34 +97,26 @@ async def notify_merchant_complaint(complaint: Complaint, store: Store) -> None:
         f"Pesan:\n{complaint.description}"
     )
     try:
-        await GowaClient().send_text_message(phone=store.whatsapp_number, message=message)
+        await GowaClient().send_text_message(phone=merchant_phone, message=message)
     except GowaClientError:
         log.warning("notify_merchant_complaint_failed", complaint_id=str(complaint.id))
 
 
-async def notify_merchant_refund(refund: RefundRequest, store: Store) -> None:
+async def notify_merchant_refund(refund: RefundRequest, merchant_phone: str) -> None:
     """Alert merchant about a refund request."""
-    if not store.whatsapp_number:
-        log.warning("merchant_whatsapp_missing", store_id=str(store.id))
-        return
-
     message = (
         f"🔄 Permintaan refund dari {refund.customer_phone}\n\n"
         f"Pesanan: {refund.order_id}\n"
         f"Alasan:\n{refund.reason}"
     )
     try:
-        await GowaClient().send_text_message(phone=store.whatsapp_number, message=message)
+        await GowaClient().send_text_message(phone=merchant_phone, message=message)
     except GowaClientError:
         log.warning("notify_merchant_refund_failed", refund_id=str(refund.id))
 
 
-async def notify_merchant_low_stock(product: Product, store: Store) -> None:
+async def notify_merchant_low_stock(product: Product, merchant_phone: str) -> None:
     """Alert merchant when a product is running low on stock."""
-    if not store.whatsapp_number:
-        log.warning("merchant_whatsapp_missing", store_id=str(store.id))
-        return
-
     stock = product.stock if product.stock is not None else 0
     message = (
         f"📉 Stok produk hampir habis!\n\n"
@@ -140,23 +125,19 @@ async def notify_merchant_low_stock(product: Product, store: Store) -> None:
         f"Segera restock agar tidak kehabisan."
     )
     try:
-        await GowaClient().send_text_message(phone=store.whatsapp_number, message=message)
+        await GowaClient().send_text_message(phone=merchant_phone, message=message)
     except GowaClientError:
         log.warning("notify_merchant_low_stock_failed", product_id=str(product.id))
 
 
 async def notify_merchant_daily_summary(
-    store: Store,
+    merchant_phone: str,
     total_revenue: int,
     order_count: int,
     pending_orders: int,
     bestseller: str | None,
 ) -> None:
     """Send merchant a daily summary via WhatsApp."""
-    if not store.whatsapp_number:
-        log.warning("merchant_whatsapp_missing", store_id=str(store.id))
-        return
-
     lines = [
         "📊 Ringkasan Harian",
         "",
@@ -170,6 +151,6 @@ async def notify_merchant_daily_summary(
         lines.append("\nJangan lupa follow up pelanggan yang belum bayar.")
     message = "\n".join(lines)
     try:
-        await GowaClient().send_text_message(phone=store.whatsapp_number, message=message)
+        await GowaClient().send_text_message(phone=merchant_phone, message=message)
     except GowaClientError:
-        log.warning("notify_merchant_daily_summary_failed", store_id=str(store.id))
+        log.warning("notify_merchant_daily_summary_failed", merchant_phone=merchant_phone)

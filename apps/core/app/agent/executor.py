@@ -1,4 +1,4 @@
-"""High-level executor that wires a user message through the commerce agent graph.
+"""High-level executor that wires a user message through the ReAct commerce agent.
 
 Usage::
 
@@ -18,20 +18,18 @@ import uuid
 from typing import Any
 
 import structlog
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph.state import CompiledStateGraph
 
-from app.agent.errors import get_fallback
 from app.agent.graph import compile_graph
-from app.agent.prompts import SYSTEM_PROMPT
 from app.models.commerce import Store
 
 log = structlog.get_logger()
 
 
 class AgentExecutor:
-    """Facade that invokes the compiled LangGraph commerce agent.
+    """Facade that invokes the compiled ReAct commerce agent.
 
     Each call to :meth:`run` creates a fresh thread so conversations stay
     isolated.
@@ -48,7 +46,7 @@ class AgentExecutor:
         customer_name: str | None = None,
         is_merchant: bool = False,
     ) -> str:
-        """Run the agent for a single user message and return the reply text.
+        """Run the ReAct agent for a single user message and return the reply.
 
         Parameters
         ----------
@@ -69,10 +67,10 @@ class AgentExecutor:
             The agent's reply text in Indonesian.
         """
         if not message or not message.strip():
-            return get_fallback("unknown", "empty_message")
+            return "Maaf kak, pesannya kosong. Ada yang bisa saya bantu?"
 
         if store is None:
-            return "Maaf, saya tidak menemukan toko yang dimaksud. Silakan pilih toko terlebih dahulu."
+            return "Maaf kak, saya tidak menemukan tokonya. Silakan pilih toko dulu ya."
 
         thread_id = uuid.uuid4().hex
         config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
@@ -85,35 +83,36 @@ class AgentExecutor:
             "is_merchant": is_merchant,
         }
 
-        system_content = SYSTEM_PROMPT.format(store_name=store.name)
-        if store.custom_prompt:
-            system_content += f"\n\nInstruksi tambahan dari toko:\n{store.custom_prompt}"
-
-        input_messages: dict[str, Any] = {
-            "messages": [
-                SystemMessage(content=system_content),
-                HumanMessage(content=message.strip()),
-            ],
-            "intent": "unknown",
-            "entities": {},
-            "cart": [],
+        input_state: dict[str, Any] = {
+            "messages": [HumanMessage(content=message.strip())],
             "context": context,
-            "error": "",
-            "tool_result": {},
-            "response_text": "",
         }
 
+        # Include custom prompt if set
+        if store.custom_prompt:
+            input_state["custom_prompt"] = store.custom_prompt
+
         try:
-            result = await self._graph.ainvoke(input_messages, config)
-            reply: str = str(result.get("response_text", ""))
-            if not reply:
-                # Fallback: pull the last AIMessage from messages
-                for msg in reversed(result.get("messages", [])):
-                    if hasattr(msg, "content") and isinstance(msg.content, str) and msg.content.strip():
-                        reply = msg.content
-                        break
+            result = await self._graph.ainvoke(input_state, config)
+            reply = _extract_reply(result)
         except Exception as e:
             log.error("agent_executor_run_error", error=str(e), thread_id=thread_id)
-            reply = str(get_fallback("unknown"))
+            reply = "Maaf kak, ada gangguan sistem. Coba ulangi lagi ya."
 
         return reply
+
+
+def _extract_reply(result: dict[str, Any]) -> str:
+    """Pull the last AI message content from the graph output."""
+    messages = result.get("messages", [])
+    for msg in reversed(messages):
+        if isinstance(msg, AIMessage) and msg.content and not getattr(msg, "tool_calls", None):
+            content = msg.content
+            if isinstance(content, str) and content.strip():
+                return content
+            if isinstance(content, list):
+                texts = [p.get("text", "") for p in content if isinstance(p, dict)]
+                joined = " ".join(texts).strip()
+                if joined:
+                    return joined
+    return ""

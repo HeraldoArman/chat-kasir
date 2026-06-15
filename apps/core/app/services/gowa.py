@@ -37,6 +37,14 @@ class GowaClient:
         }
         payload = {"phone": phone_clean, "message": message}
 
+        log.info(
+            "gowa_send_attempt",
+            url=url,
+            device_id=self.device_id,
+            target_phone=phone_clean,
+            message_preview=message[:50],
+        )
+
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(url, headers=headers, json=payload)
@@ -46,6 +54,7 @@ class GowaClient:
                     "gowa_message_sent",
                     phone=phone_clean,
                     code=data.get("code"),
+                    status_code=response.status_code,
                 )
                 return data
         except httpx.HTTPStatusError as e:
@@ -54,6 +63,8 @@ class GowaClient:
                 status_code=e.response.status_code,
                 body=e.response.text,
                 phone=phone_clean,
+                device_id=self.device_id,
+                url=url,
             )
             raise GowaClientError(
                 f"GoWA send failed ({e.response.status_code}): {e.response.text}"

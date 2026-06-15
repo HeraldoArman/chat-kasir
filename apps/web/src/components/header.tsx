@@ -18,7 +18,8 @@ export default function Header() {
     void getMe().then((currentUser) => setUser(currentUser));
   }, []);
 
-  if (pathname.startsWith("/dashboard")) return null;
+  if (pathname.startsWith("/dashboard") || pathname.startsWith("/deck"))
+    return null;
 
   const handleLogout = async () => {
     await removeToken();

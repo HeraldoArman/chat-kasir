@@ -311,7 +311,9 @@ async def create_order(
 
             from app.agent.notifications import notify_merchant_new_order
 
-            await notify_merchant_new_order(order, store)
+            merchant_phone = store.owner.whatsapp_number or store.whatsapp_number
+            if merchant_phone:
+                await notify_merchant_new_order(order, merchant_phone)
 
             return {
                 "success": True,
@@ -547,6 +549,7 @@ async def confirm_payment_notify_merchant(
             order = await order_svc.get_latest_pending_by_customer(
                 UUID(store_id), customer_phone
             )
+            merchant_phone = store.owner.whatsapp_number or store.whatsapp_number
 
         if order is None:
             return {
@@ -555,7 +558,8 @@ async def confirm_payment_notify_merchant(
                 "edge_case": "no_pending_order",
             }
 
-        await notify_merchant_payment_confirmation(order, store)
+        if merchant_phone:
+            await notify_merchant_payment_confirmation(order, merchant_phone)
         return {
             "success": True,
             "message": "Terima kasih, kami akan mengonfirmasi pembayaran Anda.",
@@ -584,13 +588,14 @@ async def verify_order_payment(
             if store is None:
                 return {"success": False, "message": "Toko tidak ditemukan."}
 
-            if store.whatsapp_number is None:
+            owner_phone = store.owner.whatsapp_number
+            if not owner_phone:
                 return {
                     "success": False,
-                    "message": "Toko belum memiliki nomor WhatsApp merchant.",
+                    "message": "Pemilik toko belum memiliki nomor WhatsApp terdaftar.",
                 }
 
-            if _extract_phone(merchant_phone) != _extract_phone(store.whatsapp_number):
+            if _extract_phone(merchant_phone) != _extract_phone(owner_phone):
                 return {
                     "success": False,
                     "message": "Maaf, fitur ini hanya tersedia untuk pemilik toko.",
@@ -850,8 +855,10 @@ async def checkout_cart(
 
             svc = CartService(db)
             order = await svc.checkout(UUID(store_id), customer_phone, customer_name, note)
+            merchant_phone = store.owner.whatsapp_number or store.whatsapp_number
 
-        await notify_merchant_new_order(order, store)
+        if merchant_phone:
+            await notify_merchant_new_order(order, merchant_phone)
         return {
             "success": True,
             "message": "Pesanan berhasil dibuat dari keranjang.",
@@ -1211,6 +1218,7 @@ async def get_low_stock_products(store_id: str, threshold: int = 5) -> dict[str,
 
             order_svc = OrderService(db)
             products = await order_svc.get_inventory_insight(UUID(store_id), threshold=threshold)
+            merchant_phone = store.owner.whatsapp_number or store.whatsapp_number
 
         if not products:
             return {"success": True, "message": "Semua produk masih memiliki stok yang cukup.", "data": []}
@@ -1227,11 +1235,12 @@ async def get_low_stock_products(store_id: str, threshold: int = 5) -> dict[str,
         ]
 
         # Notify merchant about low-stock products
-        for product in products:
-            try:
-                await notify_merchant_low_stock(product, store)
-            except Exception:
-                log.warning("low_stock_notify_failed", product_id=str(product.id))
+        if merchant_phone:
+            for product in products:
+                try:
+                    await notify_merchant_low_stock(product, merchant_phone)
+                except Exception:
+                    log.warning("low_stock_notify_failed", product_id=str(product.id))
 
         return {
             "success": True,
@@ -1262,6 +1271,7 @@ async def get_daily_summary(store_id: str, date: str | None = None) -> dict[str,
 
             order_svc = OrderService(db)
             summary = await order_svc.get_daily_summary(UUID(store_id), target_date)
+            merchant_phone = store.owner.whatsapp_number or store.whatsapp_number
 
         revenue_raw = summary.get("revenue", 0)
         revenue = int(revenue_raw) if isinstance(revenue_raw, int | float) else 0
@@ -1284,16 +1294,17 @@ async def get_daily_summary(store_id: str, date: str | None = None) -> dict[str,
         if bestseller_raw and isinstance(bestseller_raw, dict):
             name_val = bestseller_raw.get("name")
             bestseller_name = str(name_val) if name_val is not None else None
-        try:
-            await notify_merchant_daily_summary(
-                store,
-                total_revenue=revenue,
-                order_count=order_count,
-                pending_orders=pending_orders,
-                bestseller=bestseller_name,
-            )
-        except Exception:
-            log.warning("daily_summary_notify_failed", store_id=store_id)
+        if merchant_phone:
+            try:
+                await notify_merchant_daily_summary(
+                    merchant_phone,
+                    total_revenue=revenue,
+                    order_count=order_count,
+                    pending_orders=pending_orders,
+                    bestseller=bestseller_name,
+                )
+            except Exception:
+                log.warning("daily_summary_notify_failed", store_id=store_id)
 
         return {"success": True, "message": "Ringkasan harian berhasil diambil.", "data": data}
     except Exception as e:
@@ -1401,6 +1412,568 @@ async def search_products_semantic(
         return {"success": False, "message": f"Gagal mencari produk secara semantik: {e}"}
 
 
+# ---------------------------------------------------------------------------
+# Merchant CRUD tools
+# ---------------------------------------------------------------------------
+
+
+class UpdateProductStockInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    product_id: str = Field(description="UUID of the product to update")
+    quantity_add: int = Field(description="Quantity to ADD to current stock (e.g. 20)")
+
+
+class CreateProductInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    name: str = Field(description="Product name")
+    price: int = Field(description="Product price in Rupiah")
+    stock: int = Field(default=0, description="Initial stock quantity")
+    description: str | None = Field(default=None, description="Optional product description")
+    weight: int | None = Field(default=None, description="Optional weight in grams")
+    image_url: str | None = Field(default=None, description="Optional product image URL")
+
+
+class GetAllOrdersInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    status: str | None = Field(default=None, description="Filter by status: pending_payment, confirmed, paid, cancelled")
+
+
+@tool(args_schema=UpdateProductStockInput)
+async def update_product_stock(
+    store_id: str,
+    product_id: str,
+    quantity_add: int,
+) -> dict[str, Any]:
+    """Merchant-only: Add stock quantity to an existing product."""
+    try:
+        from app.models.commerce import Store
+        from app.services.product import ProductService
+
+        async with async_session_factory() as db:
+            store = await db.get(Store, UUID(store_id))
+            if store is None:
+                return {"success": False, "message": "Toko tidak ditemukan."}
+
+            product_svc = ProductService(db)
+            product = await product_svc.get_by_id(UUID(product_id))
+            if product is None or product.store_id != store.id:
+                return {"success": False, "message": "Produk tidak ditemukan di toko ini."}
+
+            old_stock = product.stock or 0
+            new_stock = old_stock + quantity_add
+            from app.schemas.commerce import ProductUpdate
+            await product_svc.update(product, ProductUpdate(stock=new_stock))
+
+            return {
+                "success": True,
+                "message": f"Stok {product.name} berhasil ditambah {quantity_add} (dari {old_stock} jadi {new_stock}).",
+                "data": {"product_id": str(product.id), "name": product.name, "stock": new_stock},
+            }
+    except Exception as e:
+        log.error("tool_update_stock_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengupdate stok: {e}"}
+
+
+@tool(args_schema=CreateProductInput)
+async def create_product(
+    store_id: str,
+    name: str,
+    price: int,
+    stock: int = 0,
+    description: str | None = None,
+    weight: int | None = None,
+    image_url: str | None = None,
+) -> dict[str, Any]:
+    """Merchant-only: Create a new product in the store."""
+    try:
+        from app.models.commerce import Store
+        from app.schemas.commerce import ProductCreate
+        from app.services.product import ProductService
+
+        async with async_session_factory() as db:
+            store = await db.get(Store, UUID(store_id))
+            if store is None:
+                return {"success": False, "message": "Toko tidak ditemukan."}
+
+            product_svc = ProductService(db)
+            data = ProductCreate(
+                name=name,
+                price=price,
+                stock=stock,
+                description=description or "",
+                weight=weight,
+                image_url=image_url,
+            )
+            product = await product_svc.create(store, data)
+
+            return {
+                "success": True,
+                "message": f"Produk {product.name} berhasil dibuat!",
+                "data": {"product_id": str(product.id), "name": product.name, "price": product.price, "stock": product.stock},
+            }
+    except Exception as e:
+        log.error("tool_create_product_error", error=str(e))
+        return {"success": False, "message": f"Gagal membuat produk: {e}"}
+
+
+@tool(args_schema=GetAllOrdersInput)
+async def get_all_orders(
+    store_id: str,
+    status: str | None = None,
+) -> dict[str, Any]:
+    """Merchant-only: List all orders for the store, optionally filtered by status."""
+    try:
+        from app.models.commerce import OrderStatus
+        from app.services.order import OrderService
+
+        async with async_session_factory() as db:
+            order_svc = OrderService(db)
+            orders = await order_svc.list_by_store(UUID(store_id))
+
+            if status:
+                status_upper = status.upper()
+                try:
+                    target_status = OrderStatus(status_upper) if status_upper in {s.value for s in OrderStatus} else None
+                except ValueError:
+                    target_status = None
+                if target_status:
+                    orders = [o for o in orders if o.status == target_status]
+
+            if not orders:
+                return {"success": True, "message": "Belum ada transaksi.", "data": []}
+
+            items = []
+            for o in orders:
+                items.append({
+                    "order_id": str(o.id),
+                    "customer_phone": o.customer_phone,
+                    "customer_name": o.customer_name,
+                    "total": int(o.total) if o.total else 0,
+                    "status": o.status.value if hasattr(o.status, "value") else str(o.status),
+                    "items": o.items,
+                    "created_at": o.created_at.isoformat() if o.created_at else None,
+                })
+
+            return {
+                "success": True,
+                "message": f"Ditemukan {len(items)} transaksi.",
+                "data": items,
+            }
+    except Exception as e:
+        log.error("tool_get_all_orders_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengambil daftar transaksi: {e}"}
+
+
+# ---------------------------------------------------------------------------
+# Stats tool
+# ---------------------------------------------------------------------------
+
+
+class GetStoreStatsInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+
+
+@tool(args_schema=GetStoreStatsInput)
+async def get_store_stats(store_id: str) -> dict[str, Any]:
+    """Merchant-only: Get comprehensive store statistics (revenue, orders, products, top sellers)."""
+    try:
+        from collections import Counter
+
+        from sqlalchemy import func, select
+
+        from app.models.commerce import Order, OrderStatus, Product
+        from app.services.order import OrderService
+
+        async with async_session_factory() as db:
+            order_svc = OrderService(db)
+
+            # ── Aggregate stats ──────────────────────────────────────────
+            revenue = await order_svc.get_revenue(UUID(store_id))
+            pending = await order_svc.get_pending_count(UUID(store_id))
+
+            total_orders = (
+                await db.execute(
+                    select(func.count(Order.id)).where(Order.store_id == UUID(store_id))
+                )
+            ).scalar() or 0
+
+            # ── Order status breakdown ───────────────────────────────────
+            status_rows = await db.execute(
+                select(Order.status, func.count(Order.id).label("cnt"))
+                .where(Order.store_id == UUID(store_id))
+                .group_by(Order.status)
+            )
+            status_breakdown = {str(row.status.value if hasattr(row.status, 'value') else row.status): row.cnt for row in status_rows}
+
+            # ── Paid / confirmed orders for per-order calculations ──────
+            paid_confirmed = [OrderStatus.PAID, OrderStatus.CONFIRMED]
+            paid_count = await db.execute(
+                select(func.count(Order.id)).where(
+                    Order.store_id == UUID(store_id),
+                    Order.status.in_(paid_confirmed),
+                )
+            )
+            paid_total = paid_count.scalar() or 0
+            avg_order_value = int(revenue / paid_total) if paid_total > 0 else 0
+
+            # ── Top 5 products by sales volume ───────────────────────────
+            sales_rows = await db.execute(
+                select(Order.items).where(
+                    Order.store_id == UUID(store_id),
+                    Order.status.in_(paid_confirmed),
+                )
+            )
+            product_counts: Counter[str] = Counter()
+            product_names: dict[str, str] = {}
+            for row in sales_rows.scalars():
+                for raw in row:
+                    item = dict(raw)
+                    pid = str(item.get("product_id", ""))
+                    if pid:
+                        qty_raw = item.get("quantity", 0)
+                        if isinstance(qty_raw, int):
+                            qty = qty_raw
+                        elif isinstance(qty_raw, str):
+                            qty = int(qty_raw) if qty_raw.strip().isdigit() else 0
+                        else:
+                            qty = 0
+                        product_counts[pid] += qty
+                        product_names.setdefault(pid, str(item.get("name", "")))
+
+            top_products = [
+                {"product_id": pid, "name": product_names.get(pid, ""), "quantity_sold": qty}
+                for pid, qty in product_counts.most_common(5)
+            ]
+
+            # ── Low stock count ──────────────────────────────────────────
+            low_stock_count = (
+                await db.execute(
+                    select(func.count(Product.id)).where(
+                        Product.store_id == UUID(store_id),
+                        Product.is_active.is_(True),
+                        Product.stock <= 5,
+                    )
+                )
+            ).scalar() or 0
+
+            # ── Distinct customers ──────────────────────────────────────
+            customer_count = (
+                await db.execute(
+                    select(func.count(func.distinct(Order.customer_phone)))
+                    .where(Order.store_id == UUID(store_id))
+                )
+            ).scalar() or 0
+
+            # ── Active products count ────────────────────────────────────
+            active_products = (
+                await db.execute(
+                    select(func.count(Product.id)).where(
+                        Product.store_id == UUID(store_id),
+                        Product.is_active.is_(True),
+                    )
+                )
+            ).scalar() or 0
+
+        data: dict[str, Any] = {
+            "total_revenue": revenue,
+            "total_revenue_display": _format_rupiah(revenue),
+            "total_orders": total_orders,
+            "paid_orders": paid_total,
+            "pending_orders": pending,
+            "average_order_value": avg_order_value,
+            "average_order_value_display": _format_rupiah(avg_order_value) if avg_order_value else "Rp 0",
+            "active_products": active_products,
+            "low_stock_products": low_stock_count,
+            "total_customers": customer_count,
+            "order_status_breakdown": status_breakdown,
+            "top_products": top_products,
+        }
+
+        return {"success": True, "message": f"Ada {total_orders} pesanan, omzet {_format_rupiah(revenue)}, {active_products} produk aktif.", "data": data}
+    except Exception as e:
+        log.error("tool_get_store_stats_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengambil statistik toko: {e}"}
+
+
+# ---------------------------------------------------------------------------
+# Cancel order (merchant only)
+# ---------------------------------------------------------------------------
+
+
+class CancelOrderInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    order_id: str = Field(description="UUID of the order to cancel")
+
+
+@tool(args_schema=CancelOrderInput)
+async def cancel_order(store_id: str, order_id: str) -> dict[str, Any]:
+    """Merchant-only: Cancel a pending order and restore product stock."""
+    try:
+        from app.services.order import OrderService
+
+        async with async_session_factory() as db:
+            order_svc = OrderService(db)
+            order = await order_svc.cancel_order(UUID(store_id), UUID(order_id))
+
+            return {
+                "success": True,
+                "message": f"Pesanan {order.id} berhasil dibatalkan.",
+                "data": {"order_id": str(order.id), "status": str(order.status)},
+            }
+    except ValueError as e:
+        return {"success": False, "message": str(e), "edge_case": "cancel_not_allowed"}
+    except Exception as e:
+        log.error("tool_cancel_order_error", error=str(e))
+        return {"success": False, "message": f"Gagal membatalkan pesanan: {e}"}
+
+
+# ---------------------------------------------------------------------------
+# Update product info (merchant only)
+# ---------------------------------------------------------------------------
+
+
+class UpdateProductInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    product_id: str = Field(description="UUID of the product to update")
+    name: str | None = Field(default=None, description="New product name")
+    price: int | None = Field(default=None, description="New price in Rupiah")
+    description: str | None = Field(default=None, description="New description")
+    stock: int | None = Field(default=None, description="New stock quantity (absolute, not delta)")
+    is_active: bool | None = Field(default=None, description="Set to false to nonaktifkan produk")
+
+
+@tool(args_schema=UpdateProductInput)
+async def update_product(
+    store_id: str,
+    product_id: str,
+    name: str | None = None,
+    price: int | None = None,
+    description: str | None = None,
+    stock: int | None = None,
+    is_active: bool | None = None,
+) -> dict[str, Any]:
+    """Merchant-only: Update an existing product's name, price, description, stock, or status."""
+    try:
+        from app.models.commerce import Store
+        from app.schemas.commerce import ProductUpdate
+        from app.services.product import ProductService
+
+        async with async_session_factory() as db:
+            store = await db.get(Store, UUID(store_id))
+            if store is None:
+                return {"success": False, "message": "Toko tidak ditemukan."}
+
+            product_svc = ProductService(db)
+            product = await product_svc.get_by_id(UUID(product_id))
+            if product is None or product.store_id != store.id:
+                return {"success": False, "message": "Produk tidak ditemukan di toko ini."}
+
+            update_data = ProductUpdate(
+                name=name,
+                price=price,
+                description=description,
+                stock=stock,
+                is_active=is_active,
+            )
+            updated = await product_svc.update(product, update_data)
+
+            return {
+                "success": True,
+                "message": f"Produk {updated.name} berhasil diupdate.",
+                "data": {
+                    "product_id": str(updated.id),
+                    "name": updated.name,
+                    "price": int(updated.price) if updated.price else 0,
+                    "stock": updated.stock,
+                    "is_active": updated.is_active,
+                },
+            }
+    except Exception as e:
+        log.error("tool_update_product_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengupdate produk: {e}"}
+
+
+# ---------------------------------------------------------------------------
+# Revenue report (merchant only)
+# ---------------------------------------------------------------------------
+
+
+class GetRevenueReportInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    days: int = Field(default=7, description="Number of days to look back (e.g. 7 for weekly, 30 for monthly)")
+
+
+@tool(args_schema=GetRevenueReportInput)
+async def get_revenue_report(store_id: str, days: int = 7) -> dict[str, Any]:
+    """Merchant-only: Get revenue report for the last N days with daily breakdown."""
+    try:
+        from datetime import UTC, date, datetime, timedelta
+
+        from sqlalchemy import func, select
+
+        from app.models.commerce import Order, OrderStatus
+
+        async with async_session_factory() as db:
+            end_date = date.today()
+            start_date = end_date - timedelta(days=days - 1)
+
+            daily_breakdown: list[dict[str, Any]] = []
+            total_revenue = 0
+            total_orders = 0
+
+            for i in range(days):
+                day = end_date - timedelta(days=days - 1 - i)
+                start_dt = datetime.combine(day, datetime.min.time()).replace(tzinfo=UTC)
+                end_dt = start_dt + timedelta(days=1)
+
+                revenue_result = await db.execute(
+                    select(func.coalesce(func.sum(Order.total), 0)).where(
+                        Order.store_id == UUID(store_id),
+                        Order.status.in_([OrderStatus.PAID, OrderStatus.CONFIRMED]),
+                        Order.created_at >= start_dt,
+                        Order.created_at < end_dt,
+                    )
+                )
+                day_revenue = int(revenue_result.scalar() or 0)
+
+                count_result = await db.execute(
+                    select(func.count(Order.id)).where(
+                        Order.store_id == UUID(store_id),
+                        Order.created_at >= start_dt,
+                        Order.created_at < end_dt,
+                    )
+                )
+                day_orders = count_result.scalar() or 0
+
+                daily_breakdown.append({
+                    "date": day.isoformat(),
+                    "revenue": day_revenue,
+                    "revenue_display": _format_rupiah(day_revenue),
+                    "orders": day_orders,
+                })
+                total_revenue += day_revenue
+                total_orders += day_orders
+
+        period_label = f"{days} hari terakhir"
+        return {
+            "success": True,
+            "message": f"Omzet {period_label}: {_format_rupiah(total_revenue)}, {total_orders} pesanan.",
+            "data": {
+                "period": period_label,
+                "total_revenue": total_revenue,
+                "total_revenue_display": _format_rupiah(total_revenue),
+                "total_orders": total_orders,
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "daily_breakdown": daily_breakdown,
+            },
+        }
+    except Exception as e:
+        log.error("tool_get_revenue_report_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengambil laporan omzet: {e}"}
+
+
+# ---------------------------------------------------------------------------
+# Forward message to store owner (customer → merchant)
+# ---------------------------------------------------------------------------
+
+
+class ForwardToMerchantInput(BaseModel):
+    store_id: str = Field(description="UUID of the store (injected)")
+    customer_phone: str = Field(description="Customer's phone number (injected)")
+    message: str = Field(min_length=1, max_length=2000, description="The message the customer wants to send to the store owner")
+
+
+@tool(args_schema=ForwardToMerchantInput)
+async def forward_to_merchant(store_id: str, customer_phone: str, message: str) -> dict[str, Any]:
+    """Forward a message from the customer to the store owner via WhatsApp.
+
+    Use this when the customer explicitly asks to send a message, complaint,
+    or question directly to the store owner (e.g. "tolong sampaikan ke
+    pemilik toko bahwa ...").
+    """
+    try:
+        from app.models.commerce import Store
+        from app.services.gowa import GowaClient
+
+        async with async_session_factory() as db:
+            store = await db.get(Store, UUID(store_id))
+            if store is None:
+                return {"success": False, "message": "Toko tidak ditemukan."}
+
+            owner_phone = (store.owner.whatsapp_number if store.owner else None) or store.whatsapp_number
+            if not owner_phone:
+                return {"success": False, "message": "Pemilik toko belum memiliki nomor WhatsApp terdaftar."}
+
+        sender = customer_phone.strip()
+        body = (
+            f"📩 *Pesan dari pelanggan*\n"
+            f"Dari: {sender}\n\n"
+            f"{message}\n\n"
+            f"---\n"
+            f"Balas dengan chat biasa ya kak."
+        )
+
+        client = GowaClient()
+        await client.send_text_message(owner_phone, body)
+
+        return {
+            "success": True,
+            "message": "Pesan sudah diteruskan ke pemilik toko ya kak.",
+            "data": {"forwarded_to": owner_phone},
+        }
+    except Exception as e:
+        log.error("tool_forward_to_merchant_error", error=str(e))
+        return {"success": False, "message": f"Gagal meneruskan pesan: {e}"}
+
+
+# ---------------------------------------------------------------------------
+# Forward message to customer (merchant → customer)
+# ---------------------------------------------------------------------------
+
+
+class ForwardToCustomerInput(BaseModel):
+    store_id: str = Field(description="UUID of the store (injected)")
+    customer_phone: str = Field(description="Target customer's WhatsApp phone number")
+    message: str = Field(min_length=1, max_length=2000, description="The message the merchant wants to send to the customer")
+
+
+@tool(args_schema=ForwardToCustomerInput)
+async def forward_to_customer(store_id: str, customer_phone: str, message: str) -> dict[str, Any]:
+    """Merchant-only: Forward a message from the store owner to a customer via WhatsApp.
+
+    Use this when the merchant explicitly asks to send a message or reply
+    directly to a customer (e.g. "tolong sampaikan ke pelanggan ini bahwa ...").
+    """
+    try:
+        from app.models.commerce import Store
+        from app.services.gowa import GowaClient
+
+        async with async_session_factory() as db:
+            store = await db.get(Store, UUID(store_id))
+            if store is None:
+                return {"success": False, "message": "Toko tidak ditemukan."}
+
+        body = (
+            f"📩 *Pesan dari pemilik toko {store.name}*\n\n"
+            f"{message}\n\n"
+            f"---\n"
+            f"Balas dengan chat biasa ya kak."
+        )
+
+        client = GowaClient()
+        await client.send_text_message(customer_phone, body)
+
+        return {
+            "success": True,
+            "message": f"Pesan sudah diteruskan ke pelanggan {customer_phone}.",
+            "data": {"forwarded_to": customer_phone},
+        }
+    except Exception as e:
+        log.error("tool_forward_to_customer_error", error=str(e))
+        return {"success": False, "message": f"Gagal meneruskan pesan: {e}"}
+
+
 # Collect all tools for easy registration.
 ALL_TOOLS = [
     search_products,
@@ -1428,4 +2001,13 @@ ALL_TOOLS = [
     get_daily_summary,
     get_customer_order_history,
     search_products_semantic,
+    update_product_stock,
+    create_product,
+    get_all_orders,
+    get_store_stats,
+    cancel_order,
+    update_product,
+    get_revenue_report,
+    forward_to_merchant,
+    forward_to_customer,
 ]

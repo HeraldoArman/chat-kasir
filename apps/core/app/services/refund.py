@@ -44,7 +44,9 @@ class RefundService:
         self.db.add(refund)
         await self.db.commit()
         await self.db.refresh(refund)
-        await notify_merchant_refund(refund, store)
+        merchant_phone = store.owner.whatsapp_number or store.whatsapp_number
+        if merchant_phone:
+            await notify_merchant_refund(refund, merchant_phone)
         return refund
 
     async def list(self, store_id: UUID, status: str | None = None, limit: int = 50) -> list[RefundRequest]:

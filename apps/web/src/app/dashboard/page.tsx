@@ -8,6 +8,7 @@ import {
   BookOpen,
   TrendingUp,
   Clock,
+  Settings,
 } from "lucide-react";
 
 import {
@@ -30,6 +31,11 @@ const nav = [
     icon: BarChart3,
   },
   { href: "/dashboard/knowledge" as const, label: "Knowledge", icon: BookOpen },
+  {
+    href: "/dashboard/settings" as const,
+    label: "Settings",
+    icon: Settings,
+  },
 ] as const;
 
 export default async function DashboardPage() {

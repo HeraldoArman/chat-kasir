@@ -11,6 +11,7 @@ import {
   Percent,
   TrendingUp,
   Share2,
+  Settings,
 } from "lucide-react";
 
 import { getMe } from "@/lib/auth";
@@ -33,6 +34,7 @@ const nav = [
   },
   { href: "/dashboard/knowledge" as Route, label: "Knowledge", icon: BookOpen },
   { href: "/dashboard/share" as Route, label: "Share", icon: Share2 },
+  { href: "/dashboard/settings" as Route, label: "Settings", icon: Settings },
 ];
 
 export default async function DashboardLayout({
