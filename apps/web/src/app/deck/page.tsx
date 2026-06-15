@@ -1,13 +1,5 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type JSX,
-  type ReactNode,
-} from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
@@ -33,6 +25,14 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type JSX,
+  type ReactNode,
+} from "react";
 
 import { Badge } from "@chat-kasir/ui/components/badge";
 import { Card, CardContent } from "@chat-kasir/ui/components/card";
