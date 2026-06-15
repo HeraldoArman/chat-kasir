@@ -25,7 +25,7 @@ class Store(Base):
 
     id: Mapped[UuidType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     owner_id: Mapped[UuidType] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     slug: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
