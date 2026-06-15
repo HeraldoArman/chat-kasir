@@ -32,8 +32,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    depends_on:
-      - whatsapp
     networks:
       - core-network
 
@@ -46,8 +44,16 @@ services:
       - rest
       - --debug=true
       - --port=3000
+      - --webhook=http://core:8000/api/v1/webhook/gowa
+      - --webhook-secret=${GOWA_WEBHOOK_SECRET}
+      - --webhook-events=message
     environment:
       - PORT=3000
+      - WEBHOOK=http://core:8000/api/v1/webhook/gowa
+      - WEBHOOK_SECRET=${GOWA_WEBHOOK_SECRET}
+      - WEBHOOK_EVENTS=message
+    depends_on:
+      - core
     restart: unless-stopped
     networks:
       - core-network
