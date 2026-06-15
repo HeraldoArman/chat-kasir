@@ -10,7 +10,7 @@ services:
       - .env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://chatkasir:chatkasir@postgres:5432/chatkasir}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - QDRANT_URL=${QDRANT_URL}
@@ -21,6 +21,9 @@ services:
       - HOST=0.0.0.0
       - PORT=8000
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -36,6 +39,27 @@ services:
     networks:
       - core-network
 
+  postgres:
+    image: postgres:18
+    container_name: chatkasir-postgres
+    environment:
+      POSTGRES_USER: chatkasir
+      POSTGRES_PASSWORD: chatkasir
+      POSTGRES_DB: chatkasir
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chatkasir -d chatkasir"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - core-network
+
   whatsapp:
     image: aldinokemal2104/go-whatsapp-web-multidevice:latest
     container_name: chatkasir-whatsapp
@@ -43,7 +67,6 @@ services:
       - "8080:3000"
     env_file:
       - apps/core/.env
-      # - .env
     command:
       - rest
       - --debug=true
@@ -59,6 +82,9 @@ services:
     restart: unless-stopped
     networks:
       - core-network
+
+volumes:
+  postgres-data:
 
 networks:
   core-network:

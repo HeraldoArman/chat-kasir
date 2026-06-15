@@ -2,7 +2,6 @@ import os
 from collections.abc import AsyncGenerator
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
-from sqlalchemy import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 RAW_DATABASE_URL = os.getenv(
@@ -38,10 +37,11 @@ def _normalize_asyncpg_url(url: str) -> tuple[str, dict[str, object]]:
 
     new_query = urlencode(query_params, doseq=True)
     normalized_url = urlunparse(parsed_url._replace(query=new_query))
-    sa_url = make_url(normalized_url)
-    if sa_url.drivername == "postgresql":
-        sa_url = sa_url.set(drivername="postgresql+asyncpg")
-    return str(sa_url), connect_args
+
+    if normalized_url.startswith("postgresql://"):
+        normalized_url = "postgresql+asyncpg://" + normalized_url[len("postgresql://") :]
+
+    return normalized_url, connect_args
 
 
 DATABASE_URL, DATABASE_CONNECT_ARGS = _normalize_asyncpg_url(RAW_DATABASE_URL)
