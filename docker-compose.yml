@@ -7,6 +7,7 @@ services:
       - "8000:8000"
     env_file:
       - apps/core/.env
+      - .env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DATABASE_URL=${DATABASE_URL}
@@ -40,6 +41,9 @@ services:
     container_name: chatkasir-whatsapp
     ports:
       - "8080:3000"
+    env_file:
+      - apps/core/.env
+      # - .env
     command:
       - rest
       - --debug=true
@@ -52,8 +56,6 @@ services:
       - WEBHOOK=http://core:8000/api/v1/webhook/gowa
       - WEBHOOK_SECRET=${GOWA_WEBHOOK_SECRET}
       - WEBHOOK_EVENTS=message
-    depends_on:
-      - core
     restart: unless-stopped
     networks:
       - core-network
