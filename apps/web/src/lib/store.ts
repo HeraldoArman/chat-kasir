@@ -263,6 +263,12 @@ export async function getLowStockInventory(
   return apiFetch<Product[]>(path);
 }
 
+export async function getGowaPhone(): Promise<string | null> {
+  return apiFetch<{ phone: string | null }>("/gowa/phone").then(
+    (data) => data.phone
+  );
+}
+
 export async function getRecommendations(
   customerPhone?: string,
   keywords?: string[],

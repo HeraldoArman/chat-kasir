@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
-import { getPublicStore } from "@/lib/store";
+import { getGowaPhone, getPublicStore } from "@/lib/store";
 
 export default async function PublicStorePage({
   params,
@@ -16,7 +16,10 @@ export default async function PublicStorePage({
     notFound();
   }
 
-  if (!store.whatsapp_number) {
+  const gowaPhone = await getGowaPhone();
+  const targetPhone = gowaPhone ?? store.whatsapp_number;
+
+  if (!targetPhone) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6 text-center">
         <div className="max-w-md space-y-2">
@@ -29,7 +32,7 @@ export default async function PublicStorePage({
     );
   }
 
-  const phone = store.whatsapp_number.replace(/\D/g, "").replace(/^0/, "62");
+  const phone = targetPhone.replace(/\D/g, "").replace(/^0/, "62");
   const text = encodeURIComponent(`Halo, saya ingin pesan dari ${store.name}`);
   redirect(`https://wa.me/${phone}?text=${text}`);
 }

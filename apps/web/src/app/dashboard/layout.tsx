@@ -10,6 +10,7 @@ import {
   BookOpen,
   Percent,
   TrendingUp,
+  Share2,
 } from "lucide-react";
 
 import { getMe } from "@/lib/auth";
@@ -31,6 +32,7 @@ const nav = [
     icon: BarChart3,
   },
   { href: "/dashboard/knowledge" as Route, label: "Knowledge", icon: BookOpen },
+  { href: "/dashboard/share" as Route, label: "Share", icon: Share2 },
 ];
 
 export default async function DashboardLayout({

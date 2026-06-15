@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, X, Store } from "lucide-react";
 
@@ -9,12 +10,15 @@ import { ModeToggle } from "./mode-toggle";
 import { getMe, removeToken, type User } from "@/lib/auth";
 
 export default function Header() {
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     void getMe().then((currentUser) => setUser(currentUser));
   }, []);
+
+  if (pathname.startsWith("/dashboard")) return null;
 
   const handleLogout = async () => {
     await removeToken();
