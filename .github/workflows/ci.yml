@@ -18,11 +18,13 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
+          cache-dependency-glob: "apps/core/uv.lock"
       - name: Install dependencies
-        run: uv sync --frozen --directory apps/core
+        run: uv sync --frozen
+        working-directory: apps/core
       - name: Run ruff
-        run: uv run --directory apps/core ruff check apps/core
+        run: uv run ruff check .
+        working-directory: apps/core
 
   typecheck-py:
     name: MyPy Type Check
@@ -32,11 +34,13 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
+          cache-dependency-glob: "apps/core/uv.lock"
       - name: Install dependencies
-        run: uv sync --frozen --directory apps/core
+        run: uv sync --frozen
+        working-directory: apps/core
       - name: Run mypy
-        run: uv run --directory apps/core mypy app
+        run: uv run mypy app
+        working-directory: apps/core
 
   check-types:
     name: TypeScript Type Check
@@ -49,9 +53,10 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
+          cache-dependency-glob: "apps/core/uv.lock"
       - name: Install Python deps for core:check-types
-        run: uv sync --frozen --directory apps/core
+        run: uv sync --frozen
+        working-directory: apps/core
       - name: Install JS deps
         run: bun install --frozen-lockfile
       - name: Run check-types
