@@ -282,8 +282,9 @@ async def get_payment_info(
 
 @tool(args_schema=AnswerFAQInput)
 async def answer_faq(store_id: str, query: str) -> dict[str, Any]:
-    """Answer a frequently asked question using the store's knowledge base."""
+    """Answer a frequently asked question using keyword match + optional Qdrant RAG."""
     try:
+        from app.services.indexing import _get_rag_service
         from app.services.knowledge import KnowledgeBaseService
 
         async with async_session_factory() as db:
@@ -293,6 +294,7 @@ async def answer_faq(store_id: str, query: str) -> dict[str, Any]:
         if not entries:
             return {"success": False, "message": "Belum ada FAQ yang tersedia di toko ini.", "data": []}
 
+        # 1. Deterministic keyword fallback
         query_lower = query.lower()
         matches: list[dict[str, Any]] = []
         for entry in entries:
@@ -301,6 +303,29 @@ async def answer_faq(store_id: str, query: str) -> dict[str, Any]:
                 matches.append({"question": question_text, "answer": entry.answer, "category": entry.category})
             elif query_lower in entry.answer.lower():
                 matches.append({"question": question_text, "answer": entry.answer, "category": entry.category})
+
+        # 2. Augment with semantic RAG when enabled
+        rag = _get_rag_service()
+        if rag is not None and not matches:
+            try:
+                rag_results = rag.retrieve_with_filter(
+                    query=query,
+                    filters={"store_id": store_id, "doc_type": "faq"},
+                    top_k=3,
+                )
+                for result in rag_results:
+                    metadata_raw = result.get("metadata", {})
+                    payload: dict[str, object] = metadata_raw if isinstance(metadata_raw, dict) else {}
+                    text_value = str(result.get("text", ""))
+                    question = payload.get("question", "")
+                    category = payload.get("category", "FAQ")
+                    matches.append({
+                        "question": str(question) if question is not None else "",
+                        "answer": text_value.split(" | ")[-1] if " | " in text_value else text_value,
+                        "category": str(category) if category is not None else "FAQ",
+                    })
+            except Exception:
+                pass
 
         if not matches:
             return {"success": True, "message": "Tidak ditemukan jawaban yang cocok untuk pertanyaan Anda.", "data": []}

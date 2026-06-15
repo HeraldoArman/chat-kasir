@@ -90,6 +90,15 @@ export async function getMyStore(): Promise<Store | null> {
   }
 }
 
+export interface PublicStore extends Store {
+  products: Product[];
+  bank_accounts: BankAccount[];
+}
+
+export async function getPublicStore(slug: string): Promise<PublicStore> {
+  return apiFetch<PublicStore>(`/stores/${slug}/public`);
+}
+
 export async function updateStore(data: Partial<Omit<Store, "id" | "slug" | "owner_id" | "created_at">>): Promise<Store> {
   return apiPatch<Store>("/stores/me", data);
 }

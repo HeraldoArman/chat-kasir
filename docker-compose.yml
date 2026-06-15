@@ -32,8 +32,10 @@ services:
   whatsapp:
     image: aldinokemal2104/go-whatsapp-web-multidevice:latest
     ports:
-      - "8080:8080"
-    command: ["--debug", "true"]
+      - "8080:3000"
+    command:
+      - rest
+      - --debug=true
     restart: unless-stopped
     networks:
       - core-network

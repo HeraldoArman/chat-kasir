@@ -159,3 +159,10 @@ class DashboardSummaryResponse(BaseModel):
     pending_orders: int
     product_count: int
     bestseller: dict[str, object] | None
+
+
+class PublicStoreResponse(StoreResponse):
+    products: list[ProductResponse]
+    bank_accounts: list[BankAccountResponse]
+
+    model_config = {"from_attributes": True}

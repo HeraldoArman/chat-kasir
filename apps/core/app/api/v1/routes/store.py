@@ -18,11 +18,13 @@ from app.schemas.commerce import (
     ProductCreate,
     ProductResponse,
     ProductUpdate,
+    PublicStoreResponse,
     StoreCreate,
     StoreResponse,
     StoreUpdate,
 )
 from app.services.bank import BankAccountService
+from app.services.indexing import index_knowledge, index_product
 from app.services.knowledge import KnowledgeBaseService
 from app.services.order import OrderService
 from app.services.product import ProductService
@@ -102,6 +104,30 @@ async def get_store_by_slug(
     return store
 
 
+@router.get("/{slug}/public", response_model=PublicStoreResponse)
+async def get_public_store(
+    slug: str,
+    db: DBSession,
+) -> PublicStoreResponse:
+    """Return a store with its products and bank accounts for public sharing."""
+    store_service = StoreService(db)
+    store = await store_service.get_by_slug(slug)
+    if store is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Store not found")
+
+    product_service = ProductService(db)
+    bank_service = BankAccountService(db)
+
+    products = await product_service.get_active_by_store(store.id)
+    bank_accounts = await bank_service.list_by_store(store.id)
+
+    return PublicStoreResponse(
+        **StoreResponse.model_validate(store).model_dump(),
+        products=products,
+        bank_accounts=bank_accounts,
+    )
+
+
 @router.post("/me/products", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     data: ProductCreate,
@@ -111,7 +137,9 @@ async def create_product(
     service = StoreService(db)
     store = await service.get_by_owner(current_user.id)
     store = _ensure_store_owner(store, current_user)
-    return await ProductService(db).create(store, data)
+    product = await ProductService(db).create(store, data)
+    index_product(product)
+    return product
 
 
 @router.get("/me/products", response_model=list[ProductResponse])
@@ -140,7 +168,9 @@ async def update_product(
     product = await product_service.get_by_id(product_id)
     if product is None or product.store_id != store.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-    return await product_service.update(product, data)
+    updated = await product_service.update(product, data)
+    index_product(updated)
+    return updated
 
 
 @router.delete("/me/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -235,7 +265,9 @@ async def create_knowledge(
     service = StoreService(db)
     store = await service.get_by_owner(current_user.id)
     store = _ensure_store_owner(store, current_user)
-    return await KnowledgeBaseService(db).create(store, data)
+    entry = await KnowledgeBaseService(db).create(store, data)
+    index_knowledge(entry)
+    return entry
 
 
 @router.get("/me/knowledge", response_model=list[KnowledgeBaseResponse])
