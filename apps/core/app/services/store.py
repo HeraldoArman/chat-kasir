@@ -24,6 +24,9 @@ class StoreService:
         self.db = db
 
     async def create(self, owner: User, data: StoreCreate) -> Store:
+        existing_owner = await self.get_by_owner(owner.id)
+        if existing_owner is not None:
+            raise ValueError("You already have a store")
         slug = _slugify(data.slug or data.name)
         if not slug or len(slug) < 3:
             raise ValueError("Store slug must be at least 3 characters")
