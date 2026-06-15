@@ -51,6 +51,10 @@ EDGE_CASE_FALLBACKS: dict[str, str] = {
     "merchant_customer_mismatch": "Maaf, fitur ini hanya tersedia untuk pelanggan. "
     "Sebagai pemilik toko, Anda bisa mengakses dashboard untuk fitur tersebut.",
     "customer_merchant_mismatch": "Maaf, fitur ini hanya tersedia untuk pemilik toko.",
+    "no_pending_order": "Anda belum memiliki pesanan yang menunggu pembayaran.",
+    "order_not_found": "Pesanan tidak ditemukan.",
+    "already_verified": "Pesanan sudah diverifikasi sebelumnya atau tidak dapat diverifikasi.",
+    "unauthorized_merchant": "Maaf, fitur ini hanya tersedia untuk pemilik toko.",
 }
 
 

@@ -9,6 +9,7 @@ fails.
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, Literal
 
 import structlog
@@ -32,8 +33,11 @@ VALID_INTENTS = [
     "product_discovery",
     "create_order",
     "payment_info",
+    "payment_confirmation",
+    "order_status",
     "faq",
     "merchant_analytics",
+    "verify_payment",
     "greeting",
     "unknown",
 ]
@@ -43,8 +47,11 @@ INTENT_TOOL_MAP: dict[str, str] = {
     "product_discovery": "search_products",
     "create_order": "create_order",
     "payment_info": "get_payment_info",
+    "payment_confirmation": "confirm_payment_notify_merchant",
+    "order_status": "get_order_status",
     "faq": "answer_faq",
     "merchant_analytics": "get_merchant_analytics",
+    "verify_payment": "verify_order_payment",
 }
 
 
@@ -187,6 +194,17 @@ async def execute_tool(state: AgentState) -> dict[str, Any]:
     store_id = ctx.get("store_id", "")
     entities = state.get("entities", {})
 
+    # Merchant-only guard
+    merchant_only_intents = {"merchant_analytics", "verify_payment"}
+    if intent in merchant_only_intents and not ctx.get("is_merchant", False):
+        return {
+            "tool_result": {
+                "success": False,
+                "message": "Maaf, fitur ini hanya tersedia untuk pemilik toko.",
+                "edge_case": "customer_merchant_mismatch",
+            }
+        }
+
     try:
         if tool_name == "search_products":
             keywords = entities.get("keywords", []) or entities.get("product_names", [])
@@ -203,6 +221,26 @@ async def execute_tool(state: AgentState) -> dict[str, Any]:
 
         elif tool_name == "get_payment_info":
             result = await tool_fn.ainvoke({"store_id": store_id})
+
+        elif tool_name == "confirm_payment_notify_merchant":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "customer_phone": ctx.get("customer_phone", ""),
+            })
+
+        elif tool_name == "get_order_status":
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "customer_phone": ctx.get("customer_phone", ""),
+            })
+
+        elif tool_name == "verify_order_payment":
+            order_id = _extract_order_id(state)
+            result = await tool_fn.ainvoke({
+                "store_id": store_id,
+                "merchant_phone": ctx.get("customer_phone", ""),
+                "order_id": order_id,
+            })
 
         elif tool_name == "answer_faq":
             message = _get_last_user_message(state)
@@ -245,6 +283,20 @@ def _build_order_items(state: AgentState) -> list[dict[str, Any]]:
         })
 
     return items
+
+
+def _extract_order_id(state: AgentState) -> str:
+    """Extract an order UUID from entities or the raw user message."""
+    entities = state.get("entities", {})
+    order_id = entities.get("order_id", "")
+    if isinstance(order_id, str) and order_id.strip():
+        return order_id.strip()
+
+    message = _get_last_user_message(state)
+    match = re.search(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", message)
+    if match:
+        return match.group(0)
+    return ""
 
 
 # ---------------------------------------------------------------------------

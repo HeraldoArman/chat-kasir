@@ -61,6 +61,22 @@ class GetCustomerMemoryInput(BaseModel):
     customer_phone: str = Field(description="Customer WhatsApp phone number")
 
 
+class ConfirmPaymentInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    customer_phone: str = Field(description="Customer WhatsApp phone number")
+
+
+class VerifyPaymentInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    merchant_phone: str = Field(description="Merchant WhatsApp phone number")
+    order_id: str = Field(description="UUID of the order to verify")
+
+
+class GetOrderStatusInput(BaseModel):
+    store_id: str = Field(description="UUID of the store")
+    customer_phone: str = Field(description="Customer WhatsApp phone number")
+
+
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
@@ -193,6 +209,10 @@ async def create_order(
             )
             order_svc = OrderService(db)
             order = await order_svc.create(store, order_create)
+
+            from app.agent.notifications import notify_merchant_new_order
+
+            await notify_merchant_new_order(order, store)
 
             return {
                 "success": True,
@@ -383,6 +403,143 @@ async def get_customer_memory(store_id: str, customer_phone: str) -> dict[str, A
         return {"success": False, "message": f"Gagal mengambil riwayat pelanggan: {e}"}
 
 
+@tool(args_schema=ConfirmPaymentInput)
+async def confirm_payment_notify_merchant(
+    store_id: str,
+    customer_phone: str,
+) -> dict[str, Any]:
+    """Record a customer payment confirmation and notify the merchant to verify."""
+    try:
+        from app.agent.notifications import notify_merchant_payment_confirmation
+        from app.models.commerce import Store
+        from app.services.order import OrderService
+
+        async with async_session_factory() as db:
+            store = await db.get(Store, UUID(store_id))
+            if store is None:
+                return {"success": False, "message": "Toko tidak ditemukan."}
+
+            order_svc = OrderService(db)
+            order = await order_svc.get_latest_pending_by_customer(
+                UUID(store_id), customer_phone
+            )
+
+        if order is None:
+            return {
+                "success": False,
+                "message": "Anda belum memiliki pesanan yang menunggu pembayaran.",
+                "edge_case": "no_pending_order",
+            }
+
+        await notify_merchant_payment_confirmation(order, store)
+        return {
+            "success": True,
+            "message": "Terima kasih, kami akan mengonfirmasi pembayaran Anda.",
+            "data": {"order_id": str(order.id), "total": int(order.total)},
+        }
+    except Exception as e:
+        log.error("tool_confirm_payment_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengonfirmasi pembayaran: {e}"}
+
+
+@tool(args_schema=VerifyPaymentInput)
+async def verify_order_payment(
+    store_id: str,
+    merchant_phone: str,
+    order_id: str,
+) -> dict[str, Any]:
+    """Merchant-only tool: verify a pending order payment and notify the customer."""
+    try:
+        from app.agent.notifications import notify_customer_payment_confirmed
+        from app.models.commerce import Order, Store
+        from app.services.gowa_webhook import _extract_phone
+        from app.services.order import OrderService
+
+        async with async_session_factory() as db:
+            store = await db.get(Store, UUID(store_id))
+            if store is None:
+                return {"success": False, "message": "Toko tidak ditemukan."}
+
+            if store.whatsapp_number is None:
+                return {
+                    "success": False,
+                    "message": "Toko belum memiliki nomor WhatsApp merchant.",
+                }
+
+            if _extract_phone(merchant_phone) != _extract_phone(store.whatsapp_number):
+                return {
+                    "success": False,
+                    "message": "Maaf, fitur ini hanya tersedia untuk pemilik toko.",
+                    "edge_case": "unauthorized_merchant",
+                }
+
+            order = await db.get(Order, UUID(order_id))
+            if order is None or str(order.store_id) != store_id:
+                return {
+                    "success": False,
+                    "message": "Pesanan tidak ditemukan.",
+                    "edge_case": "order_not_found",
+                }
+
+            order_svc = OrderService(db)
+            if order.status != "pending_payment":
+                return {
+                    "success": False,
+                    "message": "Pesanan sudah diverifikasi sebelumnya atau tidak dapat diverifikasi.",
+                    "edge_case": "already_verified",
+                }
+
+            await order_svc.verify_payment(order)
+            await notify_customer_payment_confirmed(order, order.customer_phone)
+
+            return {
+                "success": True,
+                "message": f"Pembayaran order {order.id} telah dikonfirmasi.",
+                "data": {"order_id": str(order.id), "status": order.status},
+            }
+    except Exception as e:
+        log.error("tool_verify_payment_error", error=str(e))
+        return {"success": False, "message": f"Gagal memverifikasi pembayaran: {e}"}
+
+
+@tool(args_schema=GetOrderStatusInput)
+async def get_order_status(
+    store_id: str,
+    customer_phone: str,
+) -> dict[str, Any]:
+    """Return the latest order status for a customer in a store."""
+    try:
+        from app.models.commerce import Store
+        from app.services.order import OrderService
+
+        async with async_session_factory() as db:
+            store = await db.get(Store, UUID(store_id))
+            if store is None:
+                return {"success": False, "message": "Toko tidak ditemukan."}
+
+            order_svc = OrderService(db)
+            order = await order_svc.get_latest_by_customer(UUID(store_id), customer_phone)
+
+        if order is None:
+            return {"success": True, "message": "Anda belum memiliki pesanan."}
+
+        return {
+            "success": True,
+            "message": "Status pesanan berhasil diambil.",
+            "data": {
+                "order_id": str(order.id),
+                "status": order.status,
+                "total": int(order.total),
+                "total_display": _format_rupiah(order.total),
+                "items": order.items,
+                "created_at": str(order.created_at),
+            },
+        }
+    except Exception as e:
+        log.error("tool_get_order_status_error", error=str(e))
+        return {"success": False, "message": f"Gagal mengambil status pesanan: {e}"}
+
+
 # Collect all tools for easy registration.
 ALL_TOOLS = [
     search_products,
@@ -391,4 +548,7 @@ ALL_TOOLS = [
     answer_faq,
     get_merchant_analytics,
     get_customer_memory,
+    confirm_payment_notify_merchant,
+    verify_order_payment,
+    get_order_status,
 ]

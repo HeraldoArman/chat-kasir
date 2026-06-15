@@ -65,6 +65,27 @@ class OrderService:
         value = result.scalar()
         return int(value) if value else 0
 
+    async def get_latest_by_customer(
+        self,
+        store_id: UUID,
+        customer_phone: str,
+        statuses: list[OrderStatus] | None = None,
+    ) -> Order | None:
+        query = select(Order).where(
+            Order.store_id == store_id, Order.customer_phone == customer_phone
+        )
+        if statuses:
+            query = query.where(Order.status.in_(statuses))
+        result = await self.db.execute(query.order_by(Order.created_at.desc()).limit(1))
+        return result.scalar_one_or_none()
+
+    async def get_latest_pending_by_customer(
+        self, store_id: UUID, customer_phone: str
+    ) -> Order | None:
+        return await self.get_latest_by_customer(
+            store_id, customer_phone, statuses=[OrderStatus.PENDING_PAYMENT]
+        )
+
     async def get_bestseller(self, store_id: UUID) -> dict[str, object] | None:
         """Return the most ordered product from confirmed/paid orders by counting items JSONB."""
         orders = await self.db.execute(
