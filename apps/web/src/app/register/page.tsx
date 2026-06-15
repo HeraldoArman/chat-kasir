@@ -19,12 +19,12 @@ import { Input } from "@chat-kasir/ui/components/input";
 import { Label } from "@chat-kasir/ui/components/label";
 import { login, register } from "@/lib/auth";
 
-function FadeIn({ children }: { children: React.ReactNode }) {
+function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 32 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
     </motion.div>
@@ -57,7 +57,7 @@ export default function RegisterPage() {
         router.push("/onboarding");
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Registration failed"
+          error instanceof Error ? error.message : "Registration failed",
         );
       }
     });
@@ -68,23 +68,35 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="flex min-h-[calc(100dvh-4rem)] items-center justify-center px-4 py-12">
+    <main className="relative flex min-h-[calc(100dvh-4rem)] items-center justify-center overflow-hidden px-4 py-12">
+      {/* Warm ambient glow — matches landing page CTA pattern */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-32 -right-32 size-[32rem] rounded-full bg-primary/5 blur-3xl dark:bg-primary/10"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-40 -left-40 size-[28rem] rounded-full bg-primary/5 blur-3xl dark:bg-primary/10"
+      />
+
       <FadeIn>
-        <Card className="w-full max-w-md rounded-3xl border">
-          <CardHeader className="space-y-1 text-center">
-            <div className="bg-primary text-primary-foreground mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl">
+        <Card className="w-full max-w-md rounded-3xl border shadow-sm">
+          <CardHeader className="flex flex-col items-center gap-4 text-center">
+            <div className="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-2xl">
               <Store className="size-6" />
             </div>
-            <CardTitle className="text-2xl font-bold tracking-tight">
-              Create your store
-            </CardTitle>
-            <CardDescription>
-              Sign up to start selling on WhatsApp with AI.
-            </CardDescription>
+            <div className="flex flex-col gap-1">
+              <CardTitle className="text-2xl font-bold tracking-tight">
+                Create your store
+              </CardTitle>
+              <CardDescription>
+                Sign up to start selling on WhatsApp with AI.
+              </CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="username">Username</Label>
                 <Input
                   id="username"
@@ -100,7 +112,7 @@ export default function RegisterPage() {
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="full_name">Full name</Label>
                 <Input
                   id="full_name"
@@ -115,7 +127,7 @@ export default function RegisterPage() {
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="whatsapp_number">WhatsApp number</Label>
                 <Input
                   id="whatsapp_number"
@@ -129,7 +141,7 @@ export default function RegisterPage() {
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Input
@@ -173,7 +185,10 @@ export default function RegisterPage() {
               >
                 {isPending ? (
                   <>
-                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    <Loader2
+                      className="size-4 animate-spin"
+                      data-icon="inline-start"
+                    />
                     Creating account...
                   </>
                 ) : (
