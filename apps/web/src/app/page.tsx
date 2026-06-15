@@ -329,16 +329,16 @@ export default function Home() {
                   your WhatsApp store link.
                 </p>
                 <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                  <Link href="#">
-                    <Button
-                      size="lg"
-                      variant="secondary"
-                      className="rounded-full px-8"
-                    >
-                      Create your store
-                      <ArrowRight data-icon="inline-end" className="size-4" />
-                    </Button>
-                  </Link>
+              <Link href="/register">
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="rounded-full px-8"
+                >
+                  Create your store
+                  <ArrowRight data-icon="inline-end" className="size-4" />
+                </Button>
+              </Link>
                 </div>
               </div>
               <div className="pointer-events-none absolute -top-24 -right-24 size-[28rem] rounded-full bg-white/10 blur-3xl" />

@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@chat
 import { Input } from "@chat-kasir/ui/components/input";
 import { Label } from "@chat-kasir/ui/components/label";
 import { login } from "@/lib/auth";
+import { getMyStore } from "@/lib/store";
 
 function FadeIn({ children }: { children: React.ReactNode }) {
   return (
@@ -36,8 +37,9 @@ export default function LoginPage() {
     startTransition(async () => {
       try {
         await login(form);
+        const store = await getMyStore();
         toast.success("Welcome back!");
-        router.push("/");
+        router.push(store ? "/dashboard" : "/onboarding");
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Login failed");
       }
