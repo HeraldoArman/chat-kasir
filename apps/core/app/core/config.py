@@ -40,7 +40,7 @@ class GoogleOAuthConfig(BaseSettings):
 
 
 class JWTConfig(BaseSettings):
-    secret_key: str = "change-me-in-production"
+    secret_key: str = Field(default="", validation_alias="JWT_SECRET_KEY")
     algorithm: str = "HS256"
     expire_hours: int = 24
 

@@ -1,31 +1,61 @@
 "use client";
 
-import { Button } from "@chat-kasir/ui/components/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@chat-kasir/ui/components/dropdown-menu";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Monitor } from "lucide-react";
 import { useTheme } from "next-themes";
-import * as React from "react";
+import { useEffect, useState } from "react";
 
 export function ModeToggle() {
-  const { setTheme } = useTheme();
+  const { theme, setTheme, systemTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const current = theme === "system" ? systemTheme : theme;
+
+  if (!mounted) {
+    return (
+      <button
+        type="button"
+        aria-label="Toggle theme"
+        className="relative flex size-9 items-center justify-center rounded-full border bg-transparent"
+      >
+        <Sun className="size-4" />
+      </button>
+    );
+  }
+
+  const cycleTheme = () => {
+    if (theme === "light") setTheme("dark");
+    else if (theme === "dark") setTheme("system");
+    else setTheme("light");
+  };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" size="icon" />}>
-        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-        <span className="sr-only">Toggle theme</span>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <button
+      type="button"
+      onClick={cycleTheme}
+      aria-label={`Theme: ${theme}. Click to cycle.`}
+      className="group hover:bg-muted relative flex size-9 items-center justify-center overflow-hidden rounded-full border bg-transparent transition-colors"
+    >
+      <Sun
+        className={`absolute size-4 transition-all duration-300 ${
+          current === "dark"
+            ? "scale-0 rotate-90 opacity-0"
+            : "scale-100 rotate-0 opacity-100"
+        }`}
+      />
+      <Moon
+        className={`absolute size-4 transition-all duration-300 ${
+          current === "dark"
+            ? "scale-100 rotate-0 opacity-100"
+            : "scale-0 -rotate-90 opacity-0"
+        }`}
+      />
+      {theme === "system" && (
+        <Monitor className="text-muted-foreground absolute size-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      )}
+    </button>
   );
 }

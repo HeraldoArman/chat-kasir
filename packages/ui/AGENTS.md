@@ -20,6 +20,7 @@ src/
 ## EXPORTS
 
 Import from `@chat-kasir/ui/components/*`:
+
 ```tsx
 import { Button } from "@chat-kasir/ui/components/button";
 import { Card } from "@chat-kasir/ui/components/card";

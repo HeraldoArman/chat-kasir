@@ -257,37 +257,38 @@ chat-kasir/
 
 ### Entry Points
 
-| File | Purpose |
-|------|---------|
-| `src/app/page.tsx` | Home route (`/`) - ASCII art banner |
-| `src/app/layout.tsx` | Root layout wrapping all pages (Header, Providers) |
-| `src/app/manifest.ts` | PWA manifest (metadata route) |
+| File                  | Purpose                                            |
+| --------------------- | -------------------------------------------------- |
+| `src/app/page.tsx`    | Home route (`/`) - ASCII art banner                |
+| `src/app/layout.tsx`  | Root layout wrapping all pages (Header, Providers) |
+| `src/app/manifest.ts` | PWA manifest (metadata route)                      |
 
 ### Components
 
-| Component | Type | Purpose |
-|-----------|------|---------|
-| `header.tsx` | Client | Navigation with links + ModeToggle |
-| `mode-toggle.tsx` | Client | Dark/light theme switcher |
-| `providers.tsx` | Client | ThemeProvider + Sonner toaster |
-| `theme-provider.tsx` | Client | next-themes wrapper |
-| `loader.tsx` | Component | Loading spinner |
+| Component            | Type      | Purpose                            |
+| -------------------- | --------- | ---------------------------------- |
+| `header.tsx`         | Client    | Navigation with links + ModeToggle |
+| `mode-toggle.tsx`    | Client    | Dark/light theme switcher          |
+| `providers.tsx`      | Client    | ThemeProvider + Sonner toaster     |
+| `theme-provider.tsx` | Client    | next-themes wrapper                |
+| `loader.tsx`         | Component | Loading spinner                    |
 
 ### Tech Stack
 
-| Category | Technology | Version |
-|----------|------------|---------|
-| Framework | Next.js | 16.2.0 |
-| UI Library | React | 19.2.6 |
-| Styling | Tailwind CSS | 4.1.18 |
-| Type Safety | TypeScript | 6 |
-| Toast Notifications | sonner | 2.0.5 |
-| Icons | lucide-react | 0.546.0 |
-| Dark Mode | next-themes | 0.4.6 |
-| React Compiler | babel-plugin-react-compiler | 1.0.0 |
-| PWA | next-pwa (implied) | - |
+| Category            | Technology                  | Version |
+| ------------------- | --------------------------- | ------- |
+| Framework           | Next.js                     | 16.2.0  |
+| UI Library          | React                       | 19.2.6  |
+| Styling             | Tailwind CSS                | 4.1.18  |
+| Type Safety         | TypeScript                  | 6       |
+| Toast Notifications | sonner                      | 2.0.5   |
+| Icons               | lucide-react                | 0.546.0 |
+| Dark Mode           | next-themes                 | 0.4.6   |
+| React Compiler      | babel-plugin-react-compiler | 1.0.0   |
+| PWA                 | next-pwa (implied)          | -       |
 
 **Key Features:**
+
 - App Router with typed routes
 - React Compiler enabled
 - PWA support (port 3001)
@@ -340,7 +341,7 @@ app/
 ### API Routes
 
 | Prefix | Route File | Endpoints |
-|--------|------------|-----------|
+| --- | --- | --- |
 | `/api/v1/chat` | `routes/chat.py` | `GET /health`, `POST /chat` |
 | `/api/v1/auth` | `routes/auth.py` | `POST /register`, `POST /login`, `GET /me`, `GET /login/google`, `GET /callback/google` |
 | `/api/v1/docs/gowa` | `routes/docs.py` | `GET /openapi.yaml`, `GET /webhook` |
@@ -349,7 +350,7 @@ app/
 ### Services
 
 | Service | Class | Purpose |
-|---------|-------|---------|
+| --- | --- | --- |
 | Auth | `auth.py` | JWT tokens, password hashing (scrypt) |
 | Chat | `chat.py` | Direct LLM calls (httpx) |
 | LLM | `llm.py` | Provider abstraction (DeepInfra + Gemini fallback) |
@@ -360,6 +361,7 @@ app/
 ### Data Models
 
 **User Model:**
+
 - `id` (UUID, primary key)
 - `username` (unique, indexed)
 - `full_name`
@@ -370,6 +372,7 @@ app/
 - OAuth accounts relationship
 
 **OAuthAccount Model:**
+
 - `id` (UUID)
 - `user_id` (FK to users)
 - `provider` (OAuthProvider enum: GOOGLE, GITHUB)
@@ -377,6 +380,7 @@ app/
 - `access_token`, `refresh_token`, `expires_at`
 
 **Message Model:**
+
 - `id` (String, primary key)
 - `session_id` (indexed)
 - `user_id` (indexed, nullable)
@@ -385,26 +389,26 @@ app/
 
 ### Tech Stack
 
-| Category | Technology | Version |
-|----------|------------|---------|
-| Framework | FastAPI | 0.128.0+ |
-| Python | Python | 3.11+ |
-| ASGI Server | uvicorn[standard] | 0.30.0+ |
-| Data Validation | Pydantic | 2.9.0+ |
-| Settings | pydantic-settings | 2.5.0+ |
-| ORM | SQLAlchemy | 2.0.30+ |
-| AI Framework | LangChain | 1.3.1+ |
-| Agent Framework | LangGraph | 1.2.1+ |
-| Memory | mem0ai | 2.0.2+ |
-| Vector DB | qdrant-client | 1.14.0+ |
-| Embeddings | fastembed | - |
-| HTTP Client | httpx | 0.27.0+ |
-| JWT | python-jose[cryptography] | 3.3.0+ |
-| Password Hashing | passlib[scrypt] | 1.7.4+ |
-| Logging | structlog | 24.0.0+ |
-| Retry | tenacity | 8.2.0+ |
-| OAuth | httpx-oauth | 0.17.0+ |
-| Config | pyyaml | 6.0.0+ |
+| Category         | Technology                | Version  |
+| ---------------- | ------------------------- | -------- |
+| Framework        | FastAPI                   | 0.128.0+ |
+| Python           | Python                    | 3.11+    |
+| ASGI Server      | uvicorn[standard]         | 0.30.0+  |
+| Data Validation  | Pydantic                  | 2.9.0+   |
+| Settings         | pydantic-settings         | 2.5.0+   |
+| ORM              | SQLAlchemy                | 2.0.30+  |
+| AI Framework     | LangChain                 | 1.3.1+   |
+| Agent Framework  | LangGraph                 | 1.2.1+   |
+| Memory           | mem0ai                    | 2.0.2+   |
+| Vector DB        | qdrant-client             | 1.14.0+  |
+| Embeddings       | fastembed                 | -        |
+| HTTP Client      | httpx                     | 0.27.0+  |
+| JWT              | python-jose[cryptography] | 3.3.0+   |
+| Password Hashing | passlib[scrypt]           | 1.7.4+   |
+| Logging          | structlog                 | 24.0.0+  |
+| Retry            | tenacity                  | 8.2.0+   |
+| OAuth            | httpx-oauth               | 0.17.0+  |
+| Config           | pyyaml                    | 6.0.0+   |
 
 ### LLM Configuration (config.yaml)
 
@@ -447,7 +451,7 @@ logging:
 ### Components
 
 | Category | Components |
-|----------|------------|
+| --- | --- |
 | Layout | `accordion`, `collapsible`, `resizable`, `scroll-area`, `separator` |
 | Forms | `checkbox`, `input`, `input-otp`, `label`, `radio-group`, `select`, `slider`, `switch`, `textarea`, `toggle`, `toggle-group`, `native-select` |
 | Data Display | `badge`, `card`, `table`, `avatar`, `calendar`, `Skeleton`, `progress`, `kbd` |
@@ -460,22 +464,22 @@ logging:
 
 ### Dependencies
 
-| Library | Version | Purpose |
-|---------|---------|---------|
-| shadcn | 3.6.2 | Component framework |
-| tailwindcss | 4.x | Styling |
-| class-variance-authority | 0.7.1 | Component variants |
-| clsx | 2.1.1 | Class merging |
-| tailwind-merge | 3.3.1 | Tailwind utility merge |
-| tw-animate-css | 1.3.4 | Animation |
-| cmdk | 1.1.1 | Command palette |
-| react-day-picker | 10.0.1 | Date picker |
-| embla-carousel-react | 8.6.0 | Carousel |
-| input-otp | 1.4.2 | OTP input |
-| react-resizable-panels | 4.11.2 | Resizable panels |
-| recharts | 3.8.0 | Charts |
-| vaul | 1.1.2 | Drawer |
-| @base-ui/react | 1.5.0 | Base UI primitives |
+| Library                  | Version | Purpose                |
+| ------------------------ | ------- | ---------------------- |
+| shadcn                   | 3.6.2   | Component framework    |
+| tailwindcss              | 4.x     | Styling                |
+| class-variance-authority | 0.7.1   | Component variants     |
+| clsx                     | 2.1.1   | Class merging          |
+| tailwind-merge           | 3.3.1   | Tailwind utility merge |
+| tw-animate-css           | 1.3.4   | Animation              |
+| cmdk                     | 1.1.1   | Command palette        |
+| react-day-picker         | 10.0.1  | Date picker            |
+| embla-carousel-react     | 8.6.0   | Carousel               |
+| input-otp                | 1.4.2   | OTP input              |
+| react-resizable-panels   | 4.11.2  | Resizable panels       |
+| recharts                 | 3.8.0   | Charts                 |
+| vaul                     | 1.1.2   | Drawer                 |
+| @base-ui/react           | 1.5.0   | Base UI primitives     |
 
 ---
 
@@ -503,23 +507,29 @@ Shared TypeScript configuration (strict mode)
 
 ## Infrastructure
 
-| Category | Technology |
-|----------|------------|
-| Package Manager | Bun (1.3.9) |
-| Monorepo | Nx (21.5.2) |
-| JS/TS Linting | Ultracite (7.7.0) |
-| Type Checking | TypeScript (strict) |
-| Python Linting | Ruff |
-| Python Type Checking | Mypy |
-| Build Orchestration | Nx run-many |
+| Category             | Technology          |
+| -------------------- | ------------------- |
+| Package Manager      | Bun (1.3.9)         |
+| Monorepo             | Nx (21.5.2)         |
+| JS/TS Linting        | Ultracite (7.7.0)   |
+| Type Checking        | TypeScript (strict) |
+| Python Linting       | Ruff                |
+| Python Type Checking | Mypy                |
+| Build Orchestration  | Nx run-many         |
 
 ### Nx Configuration (nx.json)
 
 ```json
 {
   "targetDefaults": {
-    "build": { "dependsOn": ["^build"], "inputs": ["production", "^production"] },
-    "check-types": { "dependsOn": ["^check-types"], "inputs": ["default", "^default"] },
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
+    },
+    "check-types": {
+      "dependsOn": ["^check-types"],
+      "inputs": ["default", "^default"]
+    },
     "dev": { "cache": false }
   }
 }
@@ -545,7 +555,13 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -571,36 +587,36 @@ networks:
 
 **Go WhatsApp Web Multi-Device** - https://github.com/aldinokemal/go-whatsapp-web-multidevice
 
-| Attribute | Value |
-|-----------|-------|
-| Stars | ~4K |
-| Latest Version | v8.5.1 |
-| Architecture | ARM & AMD support |
-| Features | Multi-device, Webhooks, MCP, Chatwoot CRM |
+| Attribute      | Value                                     |
+| -------------- | ----------------------------------------- |
+| Stars          | ~4K                                       |
+| Latest Version | v8.5.1                                    |
+| Architecture   | ARM & AMD support                         |
+| Features       | Multi-device, Webhooks, MCP, Chatwoot CRM |
 
 #### GOWA API Endpoints
 
-| Feature | Method | Endpoint |
-|---------|--------|----------|
-| List Devices | GET | `/devices` |
-| Add Device | POST | `/devices` |
-| Get Device Info | GET | `/devices/:device_id` |
-| Remove Device | DELETE | `/devices/:device_id` |
-| Login (QR) | GET | `/devices/:device_id/login` |
-| Login (Code) | POST | `/devices/:device_id/login/code` |
-| Logout | POST | `/devices/:device_id/logout` |
-| Reconnect | POST | `/devices/:device_id/reconnect` |
-| Send Message | POST | `/messages` |
+| Feature         | Method | Endpoint                         |
+| --------------- | ------ | -------------------------------- |
+| List Devices    | GET    | `/devices`                       |
+| Add Device      | POST   | `/devices`                       |
+| Get Device Info | GET    | `/devices/:device_id`            |
+| Remove Device   | DELETE | `/devices/:device_id`            |
+| Login (QR)      | GET    | `/devices/:device_id/login`      |
+| Login (Code)    | POST   | `/devices/:device_id/login/code` |
+| Logout          | POST   | `/devices/:device_id/logout`     |
+| Reconnect       | POST   | `/devices/:device_id/reconnect`  |
+| Send Message    | POST   | `/messages`                      |
 
 ---
 
 ## Ports
 
-| Service | Port | URL |
-|---------|------|-----|
+| Service            | Port | URL                   |
+| ------------------ | ---- | --------------------- |
 | Frontend (Next.js) | 3001 | http://localhost:3001 |
-| Backend (FastAPI) | 8000 | http://localhost:8000 |
-| WhatsApp Gateway | 8080 | http://localhost:8080 |
+| Backend (FastAPI)  | 8000 | http://localhost:8000 |
+| WhatsApp Gateway   | 8080 | http://localhost:8080 |
 
 ---
 
@@ -608,22 +624,22 @@ networks:
 
 ### Required (validated by `env_validator.py`)
 
-| Variable | Purpose |
-|----------|---------|
+| Variable            | Purpose                          |
+| ------------------- | -------------------------------- |
 | `DEEPINFRA_API_KEY` | LLM API key for Deepinfra/Gemini |
-| `DATABASE_URL` | PostgreSQL connection string |
-| `JWT_SECRET_KEY` | JWT signing secret |
+| `DATABASE_URL`      | PostgreSQL connection string     |
+| `JWT_SECRET_KEY`    | JWT signing secret               |
 
 ### Optional
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `LOG_LEVEL` | INFO | Logging level |
-| `GOOGLE_OAUTH_CLIENT_ID` | - | Google OAuth client ID |
-| `GOOGLE_OAUTH_CLIENT_SECRET` | - | Google OAuth client secret |
-| `GOOGLE_OAUTH_REDIRECT_URI` | - | Google OAuth callback URI |
-| `QDRANT_URL` | - | Qdrant vector DB URL (for RAG) |
-| `QDRANT_API_KEY` | - | Qdrant API key (for RAG) |
+| Variable                     | Default | Purpose                        |
+| ---------------------------- | ------- | ------------------------------ |
+| `LOG_LEVEL`                  | INFO    | Logging level                  |
+| `GOOGLE_OAUTH_CLIENT_ID`     | -       | Google OAuth client ID         |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | -       | Google OAuth client secret     |
+| `GOOGLE_OAUTH_REDIRECT_URI`  | -       | Google OAuth callback URI      |
+| `QDRANT_URL`                 | -       | Qdrant vector DB URL (for RAG) |
+| `QDRANT_API_KEY`             | -       | Qdrant API key (for RAG)       |
 
 ---
 
@@ -654,7 +670,7 @@ cd apps/web && bun run generate-pwa-assets
 ## Anti-Patterns
 
 | Issue | Location | Description |
-|-------|----------|-------------|
+| --- | --- | --- |
 | Hardcoded JWT secret | `config.py` line 43 | `"change-me-in-production"` |
 | CORS allows all | `main.py` | `allow_origins=["*"]` - NOT for production |
 | No tests | `apps/core/tests/` | Empty tests directory |
@@ -666,7 +682,7 @@ cd apps/web && bun run generate-pwa-assets
 ## Code Map
 
 | Symbol | Type | Location | Role |
-|--------|------|----------|------|
+| --- | --- | --- | --- |
 | `create_app()` | FastAPI factory | `apps/core/app/main.py` | App initialization |
 | `api_router` | APIRouter | `apps/core/app/api/v1/router.py` | Route aggregation |
 | `get_config()` | Config loader | `apps/core/app/core/config.py` | YAML config + Pydantic |

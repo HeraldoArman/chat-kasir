@@ -6,7 +6,7 @@ const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* Reveal/scroll-in animations are disabled by design — every .reveal
    element renders in its final state on load so scrolling reads clean. */
-document.querySelectorAll(".reveal").forEach((el) => el.classList.add("is-in"));
+for (const element of document.querySelectorAll(".reveal")) element.classList.add("is-in");
 
 /* — Hover-to-play videos —————————————————————————————————
    Videos with data-hover-play render as static first-frame on desktop
@@ -18,22 +18,22 @@ document.querySelectorAll(".reveal").forEach((el) => el.classList.add("is-in"));
   const videos = document.querySelectorAll("video[data-hover-play]");
 
   if (supportsHover) {
-    videos.forEach((video) => {
+    for (const video of videos) {
       // Pause + reset to first frame on load (desktop static preview).
       video.removeAttribute("autoplay");
-      try { video.pause(); video.currentTime = 0; } catch (_) {}
+      try { video.pause(); video.currentTime = 0; } catch {}
 
       const card = video.closest(".ex-card, .diptych__half") || video.parentElement;
-      if (!card) return;
+      if (!card) continue;
 
       const onEnter = () => { video.play().catch(() => {}); };
-      const onLeave = () => { video.pause(); try { video.currentTime = 0; } catch (_) {} };
+      const onLeave = () => { video.pause(); try { video.currentTime = 0; } catch {} };
 
       card.addEventListener("mouseenter", onEnter);
       card.addEventListener("mouseleave", onLeave);
       card.addEventListener("focusin",   onEnter);
       card.addEventListener("focusout",  onLeave);
-    });
+    }
   }
   // On touch devices, the autoplay attribute already runs the loop.
 }
@@ -606,15 +606,15 @@ function interpolate(node, copy) {
   let n; while ((n = walker.nextNode())) textNodes.push(n);
   for (const t of textNodes) {
     if (t.nodeValue.includes("{{")) {
-      t.nodeValue = t.nodeValue.replace(/\{\{(\w+)\}\}/g, (_, k) => copy[k] ?? "");
+      t.nodeValue = t.nodeValue.replaceAll(/{{(\w+)}}/g, (_, k) => copy[k] ?? "");
     }
   }
   // Attributes
   const all = node.querySelectorAll("*");
-  for (const el of all) {
-    for (const attr of el.attributes) {
-      if (attr.value.includes("{{")) {
-        attr.value = attr.value.replace(/\{\{(\w+)\}\}/g, (_, k) => copy[k] ?? "");
+  for (const element of all) {
+    for (const attribute of element.attributes) {
+      if (attribute.value.includes("{{")) {
+        attribute.value = attribute.value.replaceAll(/{{(\w+)}}/g, (_, k) => copy[k] ?? "");
       }
     }
   }
@@ -663,49 +663,49 @@ async function copyFromSource(source) {
 
   try {
     await navigator.clipboard.writeText(text);
-  } catch (err) {
+  } catch {
     const ta = document.createElement("textarea");
     ta.value = text;
     ta.setAttribute("readonly", "");
     ta.style.position = "fixed";
     ta.style.left = "-9999px";
-    document.body.appendChild(ta);
+    document.body.append(ta);
     ta.select();
-    try { document.execCommand("copy"); } catch (e) { }
-    document.body.removeChild(ta);
+    try { document.execCommand("copy"); } catch {}
+    ta.remove();
   }
 
   // Flash both the source and any visible button so the right
   // surface (mobile pseudo-element vs desktop button label) animates.
   source.dataset.state = "copied";
   source.setAttribute("aria-live", "polite");
-  const btn = source.querySelector("[data-copy-btn]");
-  if (btn) btn.dataset.state = "copied";
+  const button = source.querySelector("[data-copy-btn]");
+  if (button) button.dataset.state = "copied";
 
   clearTimeout(source._copyTimer);
   source._copyTimer = setTimeout(() => {
     delete source.dataset.state;
-    if (btn) delete btn.dataset.state;
+    if (button) delete button.dataset.state;
   }, 2200);
 }
 
 function attachCopyButtons(scope = document) {
   // Bind the whole pre — works on mobile where the button is hidden.
   const sources = scope.querySelectorAll("[data-copy-source]:not([data-copy-bound])");
-  sources.forEach((source) => {
+  for (const source of sources) {
     source.dataset.copyBound = "true";
     source.addEventListener("click", () => copyFromSource(source));
-  });
+  }
   // Button click is also handled — stop propagation so the source
   // listener doesn't double-fire (single copy per click).
   const btns = scope.querySelectorAll("[data-copy-btn]:not([data-copy-btn-bound])");
-  btns.forEach((btn) => {
-    btn.dataset.copyBtnBound = "true";
-    btn.addEventListener("click", (e) => {
+  for (const button of btns) {
+    button.dataset.copyBtnBound = "true";
+    button.addEventListener("click", (e) => {
       e.stopPropagation();
-      copyFromSource(btn.closest("[data-copy-source]"));
+      copyFromSource(button.closest("[data-copy-source]"));
     });
-  });
+  }
 }
 attachCopyButtons();
 
@@ -716,15 +716,15 @@ attachCopyButtons();
    pointer-events nudge forces the browser to release both states.
    No layout side-effects; the pill is back to normal as soon as the
    pointer next moves. */
-document.querySelectorAll('.banner__install').forEach((el) => {
-  el.addEventListener('click', () => {
+for (const element of document.querySelectorAll('.banner__install')) {
+  element.addEventListener('click', () => {
     requestAnimationFrame(() => {
-      el.blur();
-      el.style.pointerEvents = 'none';
-      setTimeout(() => { el.style.pointerEvents = ''; }, 60);
+      element.blur();
+      element.style.pointerEvents = 'none';
+      setTimeout(() => { element.style.pointerEvents = ''; }, 60);
     });
   });
-});
+}
 
 /* — GitHub star count — cached in localStorage for 1h ——————————
    Hits the public GitHub API on first paint, caches the count keyed
@@ -733,14 +733,14 @@ document.querySelectorAll('.banner__install').forEach((el) => {
    fresh count in the background and updates the DOM if it changed.
    Falls back to whatever's currently on screen if the request fails. */
 (() => {
-  const starEl = document.querySelector("[data-star-count]");
-  if (!starEl) return;
+  const starElement = document.querySelector("[data-star-count]");
+  if (!starElement) return;
 
   const REPO = "nutlope/hallmark";
-  const CACHE_KEY = "hallmark-star-count:" + REPO;   // key by repo — renames auto-invalidate
+  const CACHE_KEY = `hallmark-star-count:${  REPO}`;   // key by repo — renames auto-invalidate
   const TTL = 60 * 60 * 1000; // 1h
 
-  const format = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n));
+  const format = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)  }k` : String(n));
 
   // Read cache first — show whatever's there instantly (even if stale).
   let cachedFresh = false;
@@ -749,11 +749,11 @@ document.querySelectorAll('.banner__install').forEach((el) => {
     if (raw) {
       const cached = JSON.parse(raw);
       if (cached && typeof cached.n === "number") {
-        starEl.textContent = format(cached.n);
+        starElement.textContent = format(cached.n);
         cachedFresh = Date.now() - cached.t < TTL;
       }
     }
-  } catch (e) { /* localStorage may throw on private mode */ }
+  } catch { /* localStorage may throw on private mode */ }
 
   // Fresh cache → skip network. Stale or absent → fetch and update.
   if (cachedFresh) return;
@@ -763,40 +763,40 @@ document.querySelectorAll('.banner__install').forEach((el) => {
     .then((d) => {
       if (!d || typeof d.stargazers_count !== "number") return;
       const n = d.stargazers_count;
-      starEl.textContent = format(n);
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ n, t: Date.now() })); } catch (e) { }
+      starElement.textContent = format(n);
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ n, t: Date.now() })); } catch {}
     })
     .catch(() => { /* leave the cached / placeholder value as-is */ });
 })();
 
 /* — Theme application ————————————————————————————————— */
 /* Cached banner subnodes — populated once at startup. */
-const themeLabelEl = document.querySelector(".banner__theme");
-const themeGenreEl = document.querySelector("[data-theme-genre]");
-const ordinalEl   = document.querySelector("[data-theme-ordinal]");
+const themeLabelElement = document.querySelector(".banner__theme");
+const themeGenreElement = document.querySelector("[data-theme-genre]");
+const ordinalElement   = document.querySelector("[data-theme-ordinal]");
 const themeKeys   = Object.keys(THEMES);
 const totalThemes = themeKeys.length;
 
 function setPressed(theme) {
-  dots.forEach((btn) => {
-    const active = btn.dataset.themeBtn === theme;
-    btn.setAttribute("aria-pressed", active ? "true" : "false");
-  });
+  for (const button of dots) {
+    const active = button.dataset.themeBtn === theme;
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  }
   const themeName = THEMES[theme] || "Specimen";
   const genre = THEME_GENRES[theme] || "editorial";
-  const idx = themeKeys.indexOf(theme);
-  const ordinal = idx >= 0 ? String(idx + 1).padStart(2, "0") : "01";
+  const index = themeKeys.indexOf(theme);
+  const ordinal = index === -1 ? "01" : String(index + 1).padStart(2, "0");
 
-  if (themeLabelEl) themeLabelEl.textContent = themeName;
-  if (themeGenreEl) themeGenreEl.textContent = genre;
-  if (ordinalEl)    ordinalEl.textContent = `${ordinal} / ${totalThemes}`;
+  if (themeLabelElement) themeLabelElement.textContent = themeName;
+  if (themeGenreElement) themeGenreElement.textContent = genre;
+  if (ordinalElement)    ordinalElement.textContent = `${ordinal} / ${totalThemes}`;
 
   // Colophon footer — update the "Currently rendered in <theme>" line.
-  const footThemeEl = document.querySelector("[data-theme-current-foot]");
-  if (footThemeEl) footThemeEl.textContent = themeName;
+  const footThemeElement = document.querySelector("[data-theme-current-foot]");
+  if (footThemeElement) footThemeElement.textContent = themeName;
 
   // Fallback for older callers — keep the public theme-current span up to date.
-  if (currentLabel && !themeLabelEl) currentLabel.textContent = themeName;
+  if (currentLabel && !themeLabelElement) currentLabel.textContent = themeName;
 }
 
 function applyTheme(theme) {
@@ -805,7 +805,7 @@ function applyTheme(theme) {
     root.dataset.theme = theme;
     swapArchetypes(theme);
     setPressed(theme);
-    try { localStorage.setItem(STORAGE_KEY, theme); } catch (e) { }
+    try { localStorage.setItem(STORAGE_KEY, theme); } catch {}
   };
   if (!reduced && document.startViewTransition) {
     document.startViewTransition(apply);
@@ -815,14 +815,14 @@ function applyTheme(theme) {
 }
 
 const queried = (() => {
-  try { return new URL(window.location.href).searchParams.get("theme"); } catch (e) { return null; }
+  try { return new URL(globalThis.location.href).searchParams.get("theme"); } catch { return null; }
 })();
 const stored = (() => {
-  try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
+  try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
 })();
 const initial = THEMES[queried] ? queried
-  : THEMES[stored] ? stored
-    : (root.dataset.theme || "specimen");
+  : (THEMES[stored] ? stored
+    : (root.dataset.theme || "specimen"));
 
 // First paint — populate slots without a transition (no flash).
 // Run swapArchetypes BEFORE setPressed so the footer template is materialised
@@ -830,21 +830,21 @@ const initial = THEMES[queried] ? queried
 root.dataset.theme = initial;
 swapArchetypes(initial);
 setPressed(initial);
-try { localStorage.setItem(STORAGE_KEY, initial); } catch (e) { }
+try { localStorage.setItem(STORAGE_KEY, initial); } catch {}
 
-dots.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    applyTheme(btn.dataset.themeBtn);
+for (const button of dots) {
+  button.addEventListener("click", () => {
+    applyTheme(button.dataset.themeBtn);
     closeThemeDropdown();
   });
-});
+}
 
 /* — Theme dropdown — open/close + outside-dismiss ————————————
    The indicator button toggles the panel. Outside clicks, Escape,
    and theme selection all close it. The dropdown is hidden via the
    `hidden` attribute (CSS handles `[hidden] { display: none }`). */
 const themeTrigger  = document.querySelector("[data-theme-trigger]");
-const themeDropdown = document.getElementById("theme-dropdown");
+const themeDropdown = document.querySelector("#theme-dropdown");
 const themeWrap     = document.querySelector("[data-theme-wrap]");
 
 function openThemeDropdown() {
@@ -882,13 +882,13 @@ if (themeTrigger && themeDropdown) {
 }
 
 /* — Shuffle button + R shortcut ——————————————————————————— */
-const shuffleBtn = document.querySelector(".banner__shuffle, .banner__random");
+const shuffleButton = document.querySelector(".banner__shuffle, .banner__random");
 function pickRandomTheme() {
   const keys = Object.keys(THEMES).filter((k) => k !== root.dataset.theme);
   return keys[Math.floor(Math.random() * keys.length)];
 }
-if (shuffleBtn) {
-  shuffleBtn.addEventListener("click", () => applyTheme(pickRandomTheme()));
+if (shuffleButton) {
+  shuffleButton.addEventListener("click", () => applyTheme(pickRandomTheme()));
 }
 
 /* — T-key onboarding tooltip ————————————————————————————————
@@ -901,43 +901,43 @@ const T_TOOLTIP_KEY = "hallmark-t-tooltip-seen";
 const T_TOOLTIP_DELAY_MS = 5000;
 const T_TOOLTIP_AUTO_HIDE_MS = 8000;
 const T_TOOLTIP_FADE_MS = 240;
-const tTooltipEl = document.querySelector("[data-t-tooltip]");
+const tTooltipElement = document.querySelector("[data-t-tooltip]");
 let tTooltipShown = false;
 let tTooltipTimer = null;
 let tTooltipAutoHideTimer = null;
 
 function tTooltipSeen() {
-  try { return localStorage.getItem(T_TOOLTIP_KEY) === "1"; } catch (e) { return false; }
+  try { return localStorage.getItem(T_TOOLTIP_KEY) === "1"; } catch { return false; }
 }
 
 function markTTooltipSeen() {
-  try { localStorage.setItem(T_TOOLTIP_KEY, "1"); } catch (e) { }
+  try { localStorage.setItem(T_TOOLTIP_KEY, "1"); } catch {}
 }
 
 function showTTooltip() {
-  if (!tTooltipEl || tTooltipShown || tTooltipSeen()) return;
+  if (!tTooltipElement || tTooltipShown || tTooltipSeen()) return;
   tTooltipShown = true;
-  tTooltipEl.hidden = false;
-  delete tTooltipEl.dataset.state;
+  tTooltipElement.hidden = false;
+  delete tTooltipElement.dataset.state;
   clearTimeout(tTooltipAutoHideTimer);
   tTooltipAutoHideTimer = setTimeout(hideTTooltip, T_TOOLTIP_AUTO_HIDE_MS);
 }
 
 function hideTTooltip() {
-  if (!tTooltipEl || !tTooltipShown) return;
+  if (!tTooltipElement || !tTooltipShown) return;
   clearTimeout(tTooltipAutoHideTimer);
-  tTooltipEl.dataset.state = "closing";
+  tTooltipElement.dataset.state = "closing";
   setTimeout(() => {
-    tTooltipEl.hidden = true;
-    delete tTooltipEl.dataset.state;
+    tTooltipElement.hidden = true;
+    delete tTooltipElement.dataset.state;
     tTooltipShown = false;
     markTTooltipSeen();
   }, T_TOOLTIP_FADE_MS);
 }
 
-if (tTooltipEl && !tTooltipSeen()) {
+if (tTooltipElement && !tTooltipSeen()) {
   tTooltipTimer = setTimeout(showTTooltip, T_TOOLTIP_DELAY_MS);
-  tTooltipEl.addEventListener("click", hideTTooltip);
+  tTooltipElement.addEventListener("click", hideTTooltip);
 }
 
 /* — Easter egg — "chill, designer." ————————————————————————
@@ -947,12 +947,12 @@ if (tTooltipEl && !tTooltipSeen()) {
    it's visible, every keystroke is swallowed — no theme cycling, no
    shortcuts. After ~4s the overlay fades and the page returns. A 30s
    cooldown stops it from firing back-to-back. */
-const easterEl = document.querySelector("[data-easter-egg]");
+const easterElement = document.querySelector("[data-easter-egg]");
 const EASTER_WINDOW_MS = 3200;
 const EASTER_THRESHOLD = 12;       // ≈ 3.8 presses/sec
 const EASTER_VISIBLE_MS = 3400;    // total time the overlay stays up
 const EASTER_FADE_MS = 360;        // matches the fade-out animation
-const EASTER_COOLDOWN_MS = 15000;
+const EASTER_COOLDOWN_MS = 15_000;
 const EASTER_PUNCHLINES = [
   "theme connoisseur.",
   "easy on the keys.",
@@ -970,21 +970,21 @@ let easterDismissTimer = null;
 let easterFadeTimer = null;
 
 function showEasterEgg() {
-  if (!easterEl || easterOpen) return;
+  if (!easterElement || easterOpen) return;
 
   // Re-mount the lines so the staggered fade-in animation re-runs each
   // time. Populate the punchline after replacement so we don't write
   // into a detached node.
-  const lines = easterEl.querySelector(".easter__lines");
+  const lines = easterElement.querySelector(".easter__lines");
   if (lines) {
     const fresh = lines.cloneNode(true);
     lines.parentNode.replaceChild(fresh, lines);
   }
-  const lineEl = easterEl.querySelector("[data-easter-line]");
-  if (lineEl) lineEl.textContent = EASTER_PUNCHLINES[Math.floor(Math.random() * EASTER_PUNCHLINES.length)];
+  const lineElement = easterElement.querySelector("[data-easter-line]");
+  if (lineElement) lineElement.textContent = EASTER_PUNCHLINES[Math.floor(Math.random() * EASTER_PUNCHLINES.length)];
 
-  delete easterEl.dataset.state;
-  easterEl.hidden = false;
+  delete easterElement.dataset.state;
+  easterElement.hidden = false;
   easterOpen = true;
   document.body.style.overflow = "hidden";
   // Toggle body class so the page-shrink + blur animation runs in sync
@@ -997,16 +997,16 @@ function showEasterEgg() {
 }
 
 function hideEasterEgg() {
-  if (!easterEl || !easterOpen) return;
+  if (!easterElement || !easterOpen) return;
   clearTimeout(easterDismissTimer);
   clearTimeout(easterFadeTimer);
-  easterEl.dataset.state = "closing";
+  easterElement.dataset.state = "closing";
   // Drop the body class first so the page un-blurs / scales back in
   // tandem with the overlay leaving.
   document.body.classList.remove("easter-open");
   easterFadeTimer = setTimeout(() => {
-    easterEl.hidden = true;
-    delete easterEl.dataset.state;
+    easterElement.hidden = true;
+    delete easterElement.dataset.state;
     easterOpen = false;
     document.body.style.overflow = "";
   }, EASTER_FADE_MS);
@@ -1037,7 +1037,7 @@ document.addEventListener("keydown", (e) => {
     // Push BEFORE applying the theme so the trigger fires on this same
     // keystroke if we've crossed the threshold.
     const now = performance.now();
-    while (tStamps.length && now - tStamps[0] > EASTER_WINDOW_MS) tStamps.shift();
+    while (tStamps.length > 0 && now - tStamps[0] > EASTER_WINDOW_MS) tStamps.shift();
     tStamps.push(now);
     if (tStamps.length >= EASTER_THRESHOLD && now - easterLastFired > EASTER_COOLDOWN_MS) {
       easterLastFired = now;
@@ -1047,9 +1047,9 @@ document.addEventListener("keydown", (e) => {
     }
 
     const order = Object.keys(THEMES);
-    const i = order.indexOf(root.dataset.theme);
+    const index = order.indexOf(root.dataset.theme);
     const dir = e.shiftKey ? -1 : 1;
-    const next = order[(i + dir + order.length) % order.length];
+    const next = order[(index + dir + order.length) % order.length];
     applyTheme(next);
   } else if (e.key === "r" || e.key === "R") {
     e.preventDefault();
@@ -1060,29 +1060,29 @@ document.addEventListener("keydown", (e) => {
 /* — Hover preview on dots — reads theme name in the centre ————— */
 let previewTimer = null;
 let lastConfirmed = root.dataset.theme;
-dots.forEach((btn) => {
-  btn.addEventListener("mouseenter", () => {
+for (const button of dots) {
+  button.addEventListener("mouseenter", () => {
     lastConfirmed = root.dataset.theme;
     clearTimeout(previewTimer);
     previewTimer = setTimeout(() => {
-      if (currentLabel) currentLabel.textContent = THEMES[btn.dataset.themeBtn];
+      if (currentLabel) currentLabel.textContent = THEMES[button.dataset.themeBtn];
     }, 80);
   });
-  btn.addEventListener("mouseleave", () => {
+  button.addEventListener("mouseleave", () => {
     clearTimeout(previewTimer);
     if (currentLabel && root.dataset.theme === lastConfirmed) {
       currentLabel.textContent = THEMES[lastConfirmed];
     }
   });
-});
+}
 
 /* — Foundations · F/04 Motion demo —————————————————————
    Click "Play" to run the entrance once. The keyframe is in
    components.css; we just toggle the class so it can replay. */
-const motionBtn = document.querySelector("[data-motion-demo]");
+const motionButton = document.querySelector("[data-motion-demo]");
 const motionBlock = document.querySelector("[data-motion-block]");
-if (motionBtn && motionBlock) {
-  motionBtn.addEventListener("click", () => {
+if (motionButton && motionBlock) {
+  motionButton.addEventListener("click", () => {
     motionBlock.classList.remove("is-running");
     // force reflow so the class re-add triggers the animation again
     void motionBlock.offsetWidth;
@@ -1093,38 +1093,38 @@ if (motionBtn && motionBlock) {
 /* — Foundations · F/05 States demo ———————————————————————
    Real button. The readout reflects whatever state the button is in:
    default, hover, focus, active, loading (for ~1s after click). */
-const statesBtn = document.querySelector("[data-states-demo]");
+const statesButton = document.querySelector("[data-states-demo]");
 const statesReadout = document.querySelector("[data-states-readout]");
-if (statesBtn && statesReadout) {
+if (statesButton && statesReadout) {
   let loadingTimer = null;
 
   function setState(state) {
     statesReadout.textContent = state;
     if (state === "loading") {
-      statesBtn.dataset.state = "loading";
+      statesButton.dataset.state = "loading";
     } else {
-      delete statesBtn.dataset.state;
+      delete statesButton.dataset.state;
     }
   }
 
-  statesBtn.addEventListener("mouseenter", () => {
-    if (statesBtn.dataset.state !== "loading") setState("hover");
+  statesButton.addEventListener("mouseenter", () => {
+    if (statesButton.dataset.state !== "loading") setState("hover");
   });
-  statesBtn.addEventListener("mouseleave", () => {
-    if (statesBtn.dataset.state !== "loading" && document.activeElement !== statesBtn) {
+  statesButton.addEventListener("mouseleave", () => {
+    if (statesButton.dataset.state !== "loading" && document.activeElement !== statesButton) {
       setState("default");
     }
   });
-  statesBtn.addEventListener("focus", () => {
-    if (statesBtn.dataset.state !== "loading") setState("focus");
+  statesButton.addEventListener("focus", () => {
+    if (statesButton.dataset.state !== "loading") setState("focus");
   });
-  statesBtn.addEventListener("blur", () => {
-    if (statesBtn.dataset.state !== "loading") setState("default");
+  statesButton.addEventListener("blur", () => {
+    if (statesButton.dataset.state !== "loading") setState("default");
   });
-  statesBtn.addEventListener("mousedown", () => {
-    if (statesBtn.dataset.state !== "loading") setState("active");
+  statesButton.addEventListener("mousedown", () => {
+    if (statesButton.dataset.state !== "loading") setState("active");
   });
-  statesBtn.addEventListener("click", () => {
+  statesButton.addEventListener("click", () => {
     setState("loading");
     clearTimeout(loadingTimer);
     loadingTimer = setTimeout(() => {
@@ -1148,7 +1148,7 @@ if (statesBtn && statesReadout) {
 const tabLabels = document.querySelectorAll(
   ".vs-toggle__btn, .found-nav__btn"
 );
-tabLabels.forEach((label) => {
+for (const label of tabLabels) {
   label.addEventListener("click", (e) => {
     const id = label.getAttribute("for");
     if (!id) return;
@@ -1163,7 +1163,7 @@ tabLabels.forEach((label) => {
     // Keep keyboard nav working — focus the input but don't scroll.
     try {
       radio.focus({ preventScroll: true });
-    } catch (_) {
+    } catch {
       // Older browsers without preventScroll option — fall back to
       // saving and restoring scroll position.
       const x = window.scrollX;
@@ -1172,4 +1172,4 @@ tabLabels.forEach((label) => {
       window.scrollTo(x, y);
     }
   });
-});
+}

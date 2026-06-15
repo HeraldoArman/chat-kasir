@@ -1,1 +1,5 @@
 @import "@chat-kasir/ui/globals.css";
+
+@theme inline {
+  --font-sans: var(--font-jakarta), system-ui, sans-serif;
+}

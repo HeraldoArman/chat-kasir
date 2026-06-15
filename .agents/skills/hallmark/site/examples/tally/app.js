@@ -3,17 +3,17 @@
  */
 
 (function () {
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduceMotion = globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ── counter · live ticker for hero status + invoice + bench stats ── */
-  const liveEvents = document.getElementById("live-events");
-  const benchEps   = document.getElementById("bench-eps");
-  const invCalls   = document.getElementById("inv-calls");
-  const invTotal   = document.getElementById("inv-total");
-  const benchMrr   = document.getElementById("bench-mrr");
+  const liveEvents = document.querySelector("#live-events");
+  const benchEps   = document.querySelector("#bench-eps");
+  const invCalls   = document.querySelector("#inv-calls");
+  const invTotal   = document.querySelector("#inv-total");
+  const benchMrr   = document.querySelector("#bench-mrr");
 
-  let eps   = 12847;
-  let calls = 1284512;
+  let eps   = 12_847;
+  let calls = 1_284_512;
   let total = 5142.86;
   let mrr   = 412.6;
 
@@ -22,8 +22,8 @@
   function tick() {
     // small jitter, bounded
     eps   += Math.round((Math.random() - 0.4) * 80);
-    if (eps < 11000) eps = 11200;
-    if (eps > 14500) eps = 14200;
+    if (eps < 11_000) eps = 11_200;
+    if (eps > 14_500) eps = 14_200;
 
     calls += Math.round(Math.random() * 24 + 4);
     total += Math.random() * 0.18;
@@ -47,21 +47,21 @@
   const pricingButtons = document.querySelectorAll(".pricing__toggle button");
   const pricedSpans    = document.querySelectorAll("[data-price-monthly]");
 
-  pricingButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const period = btn.dataset.period;
-      pricingButtons.forEach((b) => b.setAttribute("aria-pressed", b === btn ? "true" : "false"));
-      pricedSpans.forEach((span) => {
+  for (const button of pricingButtons) {
+    button.addEventListener("click", () => {
+      const {period} = button.dataset;
+      for (const b of pricingButtons) b.setAttribute("aria-pressed", b === button ? "true" : "false");
+      for (const span of pricedSpans) {
         span.textContent = period === "annual" ? span.dataset.priceAnnual : span.dataset.priceMonthly;
-      });
+      }
     });
-  });
+  }
 
   /* ── hover-tilt on feature cards ── */
   const tiltCards = document.querySelectorAll("[data-tilt]");
 
   if (!reduceMotion) {
-    tiltCards.forEach((card) => {
+    for (const card of tiltCards) {
       let raf = null;
 
       card.addEventListener("mousemove", (e) => {
@@ -79,6 +79,6 @@
         if (raf) cancelAnimationFrame(raf);
         card.style.transform = "";
       });
-    });
+    }
   }
 })();

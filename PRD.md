@@ -22,12 +22,12 @@ Mayoritas UMKM Indonesia merupakan usaha mikro dan kecil.
 
 Mereka menghadapi beberapa masalah utama:
 
-* Tidak memiliki website
-* Tidak memahami dashboard e-commerce yang kompleks
-* Kesulitan membalas pelanggan satu per satu
-* Tidak memiliki customer service khusus
-* Sulit melakukan digitalisasi operasional
-* Sulit mengelola pembayaran dan verifikasi transfer secara otomatis
+- Tidak memiliki website
+- Tidak memahami dashboard e-commerce yang kompleks
+- Kesulitan membalas pelanggan satu per satu
+- Tidak memiliki customer service khusus
+- Sulit melakukan digitalisasi operasional
+- Sulit mengelola pembayaran dan verifikasi transfer secara otomatis
 
 Di sisi lain, pelanggan Indonesia sudah sangat terbiasa menggunakan WhatsApp sebagai sarana komunikasi dan transaksi.
 
@@ -51,10 +51,10 @@ Bukan website builder.
 
 ChatKasir adalah:
 
-* Sales Assistant
-* Customer Service
-* Cashier
-* Business Assistant
+- Sales Assistant
+- Customer Service
+- Cashier
+- Business Assistant
 
 Dalam satu sistem.
 
@@ -78,21 +78,7 @@ Agent yang menjalankan operasional bisnis
 
 # Core Architecture
 
-Customer
-↓
-WhatsApp
-↓
-WhatsApp Gateway
-↓
-FastAPI Backend
-↓
-LangGraph Agent
-↓
-PostgreSQL
-↓
-Qdrant
-↓
-Bank Transfer + Merchant Verification
+Customer ↓ WhatsApp ↓ WhatsApp Gateway ↓ FastAPI Backend ↓ LangGraph Agent ↓ PostgreSQL ↓ Qdrant ↓ Bank Transfer + Merchant Verification
 
 ---
 
@@ -106,15 +92,15 @@ Website hanya digunakan untuk setup awal.
 
 Merchant mengisi:
 
-* Nama toko
-* Nomor WhatsApp
-* Kategori usaha
-* Deskripsi usaha
+- Nama toko
+- Nomor WhatsApp
+- Kategori usaha
+- Deskripsi usaha
 
 Output:
 
-* Store ID
-* Store Slug
+- Store ID
+- Store Slug
 
 Contoh:
 
@@ -126,21 +112,21 @@ mydomain.id/tokobudi
 
 Merchant dapat:
 
-* Upload foto produk
-* Nama produk
-* Harga
-* Deskripsi
+- Upload foto produk
+- Nama produk
+- Harga
+- Deskripsi
 
 Optional:
 
-* Stok
-* Variasi
-* Berat
+- Stok
+- Variasi
+- Berat
 
 Data produk akan:
 
-* Disimpan di PostgreSQL
-* Di-index ke Qdrant untuk semantic search
+- Disimpan di PostgreSQL
+- Di-index ke Qdrant untuk semantic search
 
 ---
 
@@ -148,11 +134,11 @@ Data produk akan:
 
 Merchant mengisi:
 
-* FAQ
-* Jam operasional
-* Area pengiriman
-* Kebijakan retur
-* Informasi toko
+- FAQ
+- Jam operasional
+- Area pengiriman
+- Kebijakan retur
+- Informasi toko
 
 Data akan di-ingest ke Qdrant.
 
@@ -162,9 +148,9 @@ Data akan di-ingest ke Qdrant.
 
 Merchant memasukkan:
 
-* Nama bank
-* Nomor rekening
-* Nama pemilik rekening
+- Nama bank
+- Nomor rekening
+- Nama pemilik rekening
 
 Informasi rekening ditampilkan ke pembeli saat checkout.
 
@@ -176,9 +162,9 @@ Merchant bertanggung jawab memverifikasi setiap transfer masuk.
 
 Pilihan:
 
-* Professional
-* Friendly
-* Casual
+- Professional
+- Friendly
+- Casual
 
 Merchant juga dapat menambahkan custom prompt.
 
@@ -210,9 +196,9 @@ Customer:
 
 AI:
 
-* memahami intent
-* mencari produk
-* merekomendasikan produk
+- memahami intent
+- mencari produk
+- merekomendasikan produk
 
 ---
 
@@ -220,10 +206,10 @@ AI:
 
 AI menjelaskan:
 
-* harga
-* spesifikasi
-* stok
-* promo
+- harga
+- spesifikasi
+- stok
+- promo
 
 ---
 
@@ -249,9 +235,9 @@ Disimpan ke PostgreSQL.
 
 AI memberikan:
 
-* Nomor rekening tujuan sesuai toko
-* Total yang harus ditransfer
-* Instruksi konfirmasi setelah transfer
+- Nomor rekening tujuan sesuai toko
+- Total yang harus ditransfer
+- Instruksi konfirmasi setelah transfer
 
 ---
 
@@ -261,17 +247,7 @@ Setelah pembeli transfer, AI menunggu pembeli mengonfirmasi bahwa transfer sudah
 
 Flow:
 
-Pembeli Konfirmasi Transfer
-↓
-AI Notifikasi Merchant
-↓
-Merchant Cek Rekening
-↓
-Merchant Verifikasi di WhatsApp
-↓
-Order Updated
-↓
-WhatsApp Notification
+Pembeli Konfirmasi Transfer ↓ AI Notifikasi Merchant ↓ Merchant Cek Rekening ↓ Merchant Verifikasi di WhatsApp ↓ Order Updated ↓ WhatsApp Notification
 
 ---
 
@@ -279,8 +255,8 @@ WhatsApp Notification
 
 Customer menerima:
 
-* status pembayaran
-* ringkasan pesanan
+- status pembayaran
+- ringkasan pesanan
 
 ---
 
@@ -308,9 +284,9 @@ Customer membeli kopi.
 
 AI menawarkan:
 
-* gula aren
-* mug
-* snack
+- gula aren
+- mug
+- snack
 
 ---
 
@@ -320,8 +296,8 @@ Customer membeli helm.
 
 AI menawarkan:
 
-* visor
-* jas hujan
+- visor
+- jas hujan
 
 ---
 
@@ -421,9 +397,9 @@ AI mengirim ringkasan harian.
 
 AI mengingat:
 
-* nama pelanggan
-* histori pembelian
-* preferensi produk
+- nama pelanggan
+- histori pembelian
+- preferensi produk
 
 ---
 
@@ -445,17 +421,17 @@ AI dapat memberikan rekomendasi personal.
 
 Digunakan hanya untuk:
 
-* FAQ retrieval
-* Product semantic search
-* Customer memory retrieval
-* Conversation summary retrieval
+- FAQ retrieval
+- Product semantic search
+- Customer memory retrieval
+- Conversation summary retrieval
 
 Tidak digunakan untuk:
 
-* Inventory
-* Payment
-* Orders
-* Transaction status
+- Inventory
+- Payment
+- Orders
+- Transaction status
 
 Data kritikal tetap berada di PostgreSQL.
 
@@ -463,42 +439,19 @@ Data kritikal tetap berada di PostgreSQL.
 
 # QRIS Integration (future)
 
-
 ---
 
 # Agent Workflow
 
 ## Sales Flow
 
-Customer Message
-↓
-Intent Detection
-↓
-Product Search
-↓
-Recommendation
-↓
-Order Creation
-↓
-Payment Creation
-↓
-Payment Verification
-↓
-Order Confirmation
+Customer Message ↓ Intent Detection ↓ Product Search ↓ Recommendation ↓ Order Creation ↓ Payment Creation ↓ Payment Verification ↓ Order Confirmation
 
 ---
 
 ## Merchant Analytics Flow
 
-Merchant Question
-↓
-Agent Reasoning
-↓
-PostgreSQL Query
-↓
-Result Summary
-↓
-WhatsApp Response
+Merchant Question ↓ Agent Reasoning ↓ PostgreSQL Query ↓ Result Summary ↓ WhatsApp Response
 
 ---
 
@@ -580,27 +533,27 @@ Bun
 
 Merchant:
 
-* onboarding
-* upload produk
-* setup nomor rekening bank
+- onboarding
+- upload produk
+- setup nomor rekening bank
 
 Customer:
 
-* tanya produk
-* order produk
-* pembayaran via transfer bank
+- tanya produk
+- order produk
+- pembayaran via transfer bank
 
 AI:
 
-* product recommendation
-* FAQ answering
-* customer memory
+- product recommendation
+- FAQ answering
+- customer memory
 
 Merchant Assistant:
 
-* omzet
-* produk terlaris
-* order masuk
+- omzet
+- produk terlaris
+- order masuk
 
 ---
 
@@ -615,4 +568,3 @@ AI response accuracy > 80%
 Pembayaran via transfer bank dengan verifikasi merchant melalui WhatsApp
 
 Minimal 1 transaksi end-to-end berhasil didemokan selama Demo Day
-

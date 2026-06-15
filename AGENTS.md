@@ -1,7 +1,6 @@
 # PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-05-26
-**Stack:** Nx monorepo + Bun workspaces | Python/FastAPI + Next.js 16 | shadcn/ui + Ultracite
+**Generated:** 2026-05-26 **Stack:** Nx monorepo + Bun workspaces | Python/FastAPI + Next.js 16 | shadcn/ui + Ultracite
 
 ## OVERVIEW
 
@@ -36,7 +35,7 @@ chat-kasir/
 ## WHERE TO LOOK
 
 | Task | Location | Notes |
-|------|----------|-------|
+| --- | --- | --- |
 | Backend API | `apps/core/app/` | FastAPI with Pydantic, structlog |
 | API Routes | `apps/core/app/api/v1/routes/` | auth, chat, docs, rag |
 | Frontend | `apps/web/src/app/` | Next.js 16 App Router |
@@ -47,7 +46,7 @@ chat-kasir/
 ## CODE MAP
 
 | Symbol | Type | Location | Role |
-|--------|------|----------|------|
+| --- | --- | --- | --- |
 | `create_app()` | FastAPI factory | `apps/core/app/main.py` | App initialization |
 | `api_router` | APIRouter | `apps/core/app/api/v1/router.py` | Route aggregation |
 | `get_config()` | Config loader | `apps/core/app/core/config.py` | YAML config + Pydantic |

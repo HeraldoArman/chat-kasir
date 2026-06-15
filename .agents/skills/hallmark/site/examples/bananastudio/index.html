@@ -352,16 +352,16 @@
         ticking = true;
         requestAnimationFrame(() => { update(); ticking = false; });
       };
-      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("scroll", onScroll );
       update();
     })();
 
     // Stagger reveal — one-shot, IntersectionObserver only.
     (() => {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const reduce = globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const targets = document.querySelectorAll(".reveal");
-      if (reduce || !("IntersectionObserver" in window)) {
-        targets.forEach(el => el.classList.add("is-in"));
+      if (reduce || !("IntersectionObserver" in globalThis)) {
+        for (const element of targets) element.classList.add("is-in");
         return;
       }
       const io = new IntersectionObserver((entries) => {
@@ -372,14 +372,14 @@
           }
         }
       }, { rootMargin: "0px 0px -8% 0px", threshold: 0.05 });
-      targets.forEach(el => io.observe(el));
+      for (const element of targets) io.observe(element);
     })();
 
     // Recommended-tier pulse — fires once when the pricing section enters.
     (() => {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const reduce = globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const rec = document.querySelector(".tier--rec");
-      if (!rec || reduce || !("IntersectionObserver" in window)) return;
+      if (!rec || reduce || !("IntersectionObserver" in globalThis)) return;
       const io = new IntersectionObserver((entries) => {
         for (const e of entries) {
           if (e.isIntersecting) {
@@ -400,7 +400,7 @@
 
       const set = (v) => {
         const clamped = Math.max(0, Math.min(100, v));
-        compare.style.setProperty("--pos", clamped + "%");
+        compare.style.setProperty("--pos", `${clamped  }%`);
         input.value = clamped;
       };
 
@@ -435,40 +435,40 @@
 
       // Keyboard a11y — input is hidden but Tab-reachable.
       input.addEventListener("input", (e) =>
-        compare.style.setProperty("--pos", e.target.value + "%")
+        compare.style.setProperty("--pos", `${e.target.value  }%`)
       );
 
-      set(parseFloat(input.value));
+      set(Number.parseFloat(input.value));
     })();
 
     // Animated counter — one-shot, eases into the final value.
     (() => {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const el = document.querySelector("[data-counter]");
-      if (!el) return;
-      const target = parseInt(el.dataset.counter, 10);
-      if (reduce || !("IntersectionObserver" in window)) {
-        el.textContent = target.toLocaleString("en-US");
-        return;
-      }
-      const fmt = new Intl.NumberFormat("en-US");
-      const easeOut = (t) => 1 - Math.pow(1 - t, 3);
-      const io = new IntersectionObserver((entries) => {
-        for (const e of entries) {
-          if (!e.isIntersecting) continue;
-          io.disconnect();
-          const start = performance.now();
-          const dur = 2000;
-          const tick = (now) => {
-            const t = Math.min(1, (now - start) / dur);
-            const v = Math.round(target * easeOut(t));
-            el.textContent = fmt.format(v);
-            if (t < 1) requestAnimationFrame(tick);
-          };
-          requestAnimationFrame(tick);
-        }
-      }, { threshold: 0.4 });
-      io.observe(el);
+      const reduce = globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const element = document.querySelector("[data-counter]");
+  if (!element) return;
+  const target = Number.parseInt(element.dataset.counter, 10);
+  if (reduce || !("IntersectionObserver" in globalThis)) {
+    element.textContent = target.toLocaleString("en-US");
+    return;
+  }
+  const fmt = new Intl.NumberFormat("en-US");
+  const easeOut = (t) => 1 - (1 - t)**3;
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      io.disconnect();
+      const start = performance.now();
+      const dur = 2000;
+      const tick = (now) => {
+        const t = Math.min(1, (now - start) / dur);
+        const v = Math.round(target * easeOut(t));
+        element.textContent = fmt.format(v);
+        if (t < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
+  }, { threshold: 0.4 });
+  io.observe(element);
     })();
   </script>
 </body>

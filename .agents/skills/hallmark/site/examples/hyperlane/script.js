@@ -3,11 +3,11 @@
  */
 
 (() => {
-  "use strict";
+  
 
   const reduced =
-    window.matchMedia &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    globalThis.matchMedia &&
+    globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ── HP3 cursor spotlight · scoped to hero only ────────── */
   const hero = document.querySelector(".hero");
@@ -29,7 +29,7 @@
   }
 
   /* ── live countdown to event start ─────────────────────── */
-  const cd = document.getElementById("countdown");
+  const cd = document.querySelector("#countdown");
   if (cd && cd.dataset.target) {
     const target = new Date(cd.dataset.target).getTime();
     if (!Number.isNaN(target)) {
@@ -65,11 +65,11 @@
       }
     };
     onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll );
   }
 
   /* ── form silent-success (optimistic, no toast) ────────── */
-  const form = document.getElementById("rsvp-form");
+  const form = document.querySelector("#rsvp-form");
   if (form) {
     const button = form.querySelector("button[type='submit']");
     const success = form.querySelector(".rsvp__success");

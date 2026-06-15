@@ -1,38 +1,35 @@
 # Webhook Payload Documentation
 
-This document provides comprehensive documentation for the webhook payload structure used by the Go WhatsApp Web
-Multidevice application.
+This document provides comprehensive documentation for the webhook payload structure used by the Go WhatsApp Web Multidevice application.
 
 ## Overview
 
-The webhook system sends HTTP POST requests to configured URLs whenever WhatsApp events occur. Each webhook request
-includes event data in JSON format and security headers for verification.
+The webhook system sends HTTP POST requests to configured URLs whenever WhatsApp events occur. Each webhook request includes event data in JSON format and security headers for verification.
 
 ## Available Webhook Events
 
 The following events can be received via webhook:
 
-| Event                | Description                                             |
-|----------------------|---------------------------------------------------------|
-| `message`            | Text, media, contact, location, and other message types |
-| `message.reaction`   | Emoji reactions to messages                             |
-| `message.revoked`    | Deleted/revoked messages                                |
-| `message.edited`     | Edited messages                                         |
-| `message.ack`        | Delivery and read receipts                              |
-| `message.deleted`    | Messages deleted for the user                           |
-| `chat_presence`      | Typing and recording indicators from contacts           |
-| `group.participants` | Group member join/leave/promote/demote events           |
-| `group.joined`       | You were added to a group                               |
-| `newsletter.joined`  | You subscribed to a newsletter/channel                  |
-| `newsletter.left`    | You unsubscribed from a newsletter                      |
-| `newsletter.message` | New message(s) posted in a newsletter                   |
-| `newsletter.mute`    | Newsletter mute setting changed                         |
-| `call.offer`         | Incoming call received                                  |
+| Event | Description |
+| --- | --- |
+| `message` | Text, media, contact, location, and other message types |
+| `message.reaction` | Emoji reactions to messages |
+| `message.revoked` | Deleted/revoked messages |
+| `message.edited` | Edited messages |
+| `message.ack` | Delivery and read receipts |
+| `message.deleted` | Messages deleted for the user |
+| `chat_presence` | Typing and recording indicators from contacts |
+| `group.participants` | Group member join/leave/promote/demote events |
+| `group.joined` | You were added to a group |
+| `newsletter.joined` | You subscribed to a newsletter/channel |
+| `newsletter.left` | You unsubscribed from a newsletter |
+| `newsletter.message` | New message(s) posted in a newsletter |
+| `newsletter.mute` | Newsletter mute setting changed |
+| `call.offer` | Incoming call received |
 
 ## Event Filtering
 
-You can configure which events are forwarded to your webhook using the `WHATSAPP_WEBHOOK_EVENTS` environment variable or
-`--webhook-events` CLI flag.
+You can configure which events are forwarded to your webhook using the `WHATSAPP_WEBHOOK_EVENTS` environment variable or `--webhook-events` CLI flag.
 
 ### Configuration Examples
 
@@ -88,19 +85,19 @@ All webhook requests include an HMAC SHA256 signature for security verification:
 ### Verification Example (Node.js)
 
 ```javascript
-const crypto = require('crypto');
+const crypto = require("crypto");
 
 function verifyWebhookSignature(payload, signature, secret) {
-    const expectedSignature = crypto
-        .createHmac('sha256', secret)
-        .update(payload, 'utf8')
-        .digest('hex');
+  const expectedSignature = crypto
+    .createHmac("sha256", secret)
+    .update(payload, "utf8")
+    .digest("hex");
 
-    const receivedSignature = signature.replace('sha256=', '');
-    return crypto.timingSafeEqual(
-        Buffer.from(expectedSignature, 'hex'),
-        Buffer.from(receivedSignature, 'hex')
-    );
+  const receivedSignature = signature.replace("sha256=", "");
+  return crypto.timingSafeEqual(
+    Buffer.from(expectedSignature, "hex"),
+    Buffer.from(receivedSignature, "hex")
+  );
 }
 ```
 
@@ -116,7 +113,7 @@ def verify_webhook_signature(payload, signature, secret):
         payload,
         hashlib.sha256
     ).hexdigest()
-    
+
     received_signature = signature.replace('sha256=', '')
     return hmac.compare_digest(expected_signature, received_signature)
 ```
@@ -137,25 +134,25 @@ All webhook payloads follow a consistent top-level structure:
 
 ### Top-Level Fields
 
-| **Field**   | **Type** | **Description**                                                                                                     |
-|-------------|----------|---------------------------------------------------------------------------------------------------------------------|
-| `event`     | string   | Event type: `message`, `message.reaction`, `message.revoked`, `message.edited`, `message.ack`, `message.deleted`, `chat_presence`, `group.participants`, `group.joined`, `newsletter.joined`, `newsletter.left`, `newsletter.message`, `newsletter.mute`, `call.offer` |
-| `device_id` | string   | JID of the device that received this event (e.g., `628123456789@s.whatsapp.net`)                                    |
-| `payload`   | object   | Event-specific payload data                                                                                         |
+| **Field** | **Type** | **Description** |
+| --- | --- | --- |
+| `event` | string | Event type: `message`, `message.reaction`, `message.revoked`, `message.edited`, `message.ack`, `message.deleted`, `chat_presence`, `group.participants`, `group.joined`, `newsletter.joined`, `newsletter.left`, `newsletter.message`, `newsletter.mute`, `call.offer` |
+| `device_id` | string | JID of the device that received this event (e.g., `628123456789@s.whatsapp.net`) |
+| `payload` | object | Event-specific payload data |
 
 ### Common Payload Fields
 
 Fields commonly found inside the `payload` object:
 
-| **Field**   | **Type** | **Description**                                                               |
-|-------------|----------|-------------------------------------------------------------------------------|
-| `id`        | string   | Message ID                                                                    |
-| `chat_id`   | string   | Chat JID (e.g., `628987654321@s.whatsapp.net` or `120363...@g.us` for groups) |
-| `from`      | string   | Full JID of the sender (e.g., `628123456789@s.whatsapp.net`)                  |
-| `from_lid`  | string   | LID (Linked ID) of the sender if available                                    |
-| `from_name` | string   | Display name (pushname) of the sender                                         |
-| `timestamp` | string   | RFC3339 formatted timestamp (e.g., `2023-10-15T10:30:00Z`)                    |
-| `is_from_me` | boolean | Whether the message was sent by the current user                              |
+| **Field** | **Type** | **Description** |
+| --- | --- | --- |
+| `id` | string | Message ID |
+| `chat_id` | string | Chat JID (e.g., `628987654321@s.whatsapp.net` or `120363...@g.us` for groups) |
+| `from` | string | Full JID of the sender (e.g., `628123456789@s.whatsapp.net`) |
+| `from_lid` | string | LID (Linked ID) of the sender if available |
+| `from_name` | string | Display name (pushname) of the sender |
+| `timestamp` | string | RFC3339 formatted timestamp (e.g., `2023-10-15T10:30:00Z`) |
+| `is_from_me` | boolean | Whether the message was sent by the current user |
 
 ## Message Events
 
@@ -219,8 +216,7 @@ Fields commonly found inside the `payload` object:
 
 ## Receipt Events
 
-Receipt events are triggered when messages receive acknowledgments such as delivery confirmations and read receipts.
-These events use the `message.ack` event type and provide information about message status changes.
+Receipt events are triggered when messages receive acknowledgments such as delivery confirmations and read receipts. These events use the `message.ack` event type and provide information about message status changes.
 
 ### Message Delivered
 
@@ -232,9 +228,7 @@ Triggered when a message is successfully delivered to the recipient's device.
   "device_id": "628123456789@s.whatsapp.net",
   "timestamp": "2025-07-18T22:44:20Z",
   "payload": {
-    "ids": [
-      "3EB00106E8BE0F407E88EC"
-    ],
+    "ids": ["3EB00106E8BE0F407E88EC"],
     "chat_id": "120363402106XXXXX@g.us",
     "from": "6289685XXXXXX@s.whatsapp.net",
     "from_lid": "251556368777322@lid",
@@ -254,9 +248,7 @@ Triggered when a message is read by the recipient (they opened the chat and saw 
   "device_id": "628123456789@s.whatsapp.net",
   "timestamp": "2025-07-18T22:44:44Z",
   "payload": {
-    "ids": [
-      "3EB00106E8BE0F407E88EC"
-    ],
+    "ids": ["3EB00106E8BE0F407E88EC"],
     "chat_id": "120363402106XXXXX@g.us",
     "from": "6289685XXXXXX@s.whatsapp.net",
     "receipt_type": "read",
@@ -267,25 +259,23 @@ Triggered when a message is read by the recipient (they opened the chat and saw 
 
 ### Receipt Event Fields
 
-| **Field**                          | **Type** | **Description**                                           |
-|------------------------------------|----------|-----------------------------------------------------------|
-| `event`                            | string   | Always `"message.ack"` for receipt events                 |
-| `device_id`                        | string   | JID of the device that received this event                |
-| `timestamp`                        | string   | RFC3339 formatted timestamp when the receipt was received |
-| `payload.ids`                      | array    | Array of message IDs that received the acknowledgment     |
-| `payload.chat_id`                  | string   | Chat identifier (group or individual chat)                |
-| `payload.from`                     | string   | JID of the user who triggered the receipt                 |
-| `payload.from_lid`                 | string   | LID of the user (if available)                            |
-| `payload.receipt_type`             | string   | Type of receipt: `"delivered"`, `"read"`, etc.            |
-| `payload.receipt_type_description` | string   | Human-readable description of the receipt type            |
+| **Field** | **Type** | **Description** |
+| --- | --- | --- |
+| `event` | string | Always `"message.ack"` for receipt events |
+| `device_id` | string | JID of the device that received this event |
+| `timestamp` | string | RFC3339 formatted timestamp when the receipt was received |
+| `payload.ids` | array | Array of message IDs that received the acknowledgment |
+| `payload.chat_id` | string | Chat identifier (group or individual chat) |
+| `payload.from` | string | JID of the user who triggered the receipt |
+| `payload.from_lid` | string | LID of the user (if available) |
+| `payload.receipt_type` | string | Type of receipt: `"delivered"`, `"read"`, etc. |
+| `payload.receipt_type_description` | string | Human-readable description of the receipt type |
 
 ## Chat Presence Events
 
-Chat presence events are triggered when a contact starts or stops typing (or recording audio) in a chat.
-These events use the `chat_presence` event type and are useful for implementing message batching strategies.
+Chat presence events are triggered when a contact starts or stops typing (or recording audio) in a chat. These events use the `chat_presence` event type and are useful for implementing message batching strategies.
 
-**Note:** WhatsApp only sends chat presence updates when the client is marked as online. GOWA automatically marks
-itself as online upon connection, so no additional configuration is needed.
+**Note:** WhatsApp only sends chat presence updates when the client is marked as online. GOWA automatically marks itself as online upon connection, so no additional configuration is needed.
 
 ### User Typing
 
@@ -366,23 +356,21 @@ Triggered when a user starts typing in a group chat.
 
 ### Chat Presence Event Fields
 
-| **Field**          | **Type** | **Description**                                                    |
-|--------------------|----------|--------------------------------------------------------------------|
-| `event`            | string   | Always `"chat_presence"` for typing events                         |
-| `device_id`        | string   | JID of the device that received this event                         |
-| `timestamp`        | string   | RFC3339 formatted timestamp when the event was processed           |
-| `payload.from`     | string   | JID of the user who is typing (e.g., `628987654321@s.whatsapp.net`)|
-| `payload.from_lid` | string   | LID of the user (if available, typically in group chats)           |
-| `payload.chat_id`  | string   | Chat identifier (individual or group)                              |
-| `payload.state`    | string   | Typing state: `"composing"` (typing) or `"paused"` (stopped)      |
-| `payload.media`    | string   | Media type: `""` (text message) or `"audio"` (voice recording)    |
-| `payload.is_group` | boolean  | Whether this is a group chat                                       |
+| **Field** | **Type** | **Description** |
+| --- | --- | --- |
+| `event` | string | Always `"chat_presence"` for typing events |
+| `device_id` | string | JID of the device that received this event |
+| `timestamp` | string | RFC3339 formatted timestamp when the event was processed |
+| `payload.from` | string | JID of the user who is typing (e.g., `628987654321@s.whatsapp.net`) |
+| `payload.from_lid` | string | LID of the user (if available, typically in group chats) |
+| `payload.chat_id` | string | Chat identifier (individual or group) |
+| `payload.state` | string | Typing state: `"composing"` (typing) or `"paused"` (stopped) |
+| `payload.media` | string | Media type: `""` (text message) or `"audio"` (voice recording) |
+| `payload.is_group` | boolean | Whether this is a group chat |
 
 ## Group Events
 
-Group events are triggered when group metadata changes, including member join/leave events, admin promotions/demotions,
-and group settings updates. These events use the `group.participants` event type and provide comprehensive information
-about group changes.
+Group events are triggered when group metadata changes, including member join/leave events, admin promotions/demotions, and group settings updates. These events use the `group.participants` event type and provide comprehensive information about group changes.
 
 ### Group Member Join
 
@@ -396,10 +384,7 @@ Triggered when users join or are added to a group.
   "payload": {
     "chat_id": "120363402106XXXXX@g.us",
     "type": "join",
-    "jids": [
-      "6289685XXXXXX@s.whatsapp.net",
-      "6289686YYYYYY@s.whatsapp.net"
-    ]
+    "jids": ["6289685XXXXXX@s.whatsapp.net", "6289686YYYYYY@s.whatsapp.net"]
   }
 }
 ```
@@ -416,9 +401,7 @@ Triggered when users leave or are removed from a group.
   "payload": {
     "chat_id": "120363402106XXXXX@g.us",
     "type": "leave",
-    "jids": [
-      "6289687ZZZZZZ@s.whatsapp.net"
-    ]
+    "jids": ["6289687ZZZZZZ@s.whatsapp.net"]
   }
 }
 ```
@@ -435,9 +418,7 @@ Triggered when users are promoted to admin.
   "payload": {
     "chat_id": "120363402106XXXXX@g.us",
     "type": "promote",
-    "jids": [
-      "6289688AAAAAA@s.whatsapp.net"
-    ]
+    "jids": ["6289688AAAAAA@s.whatsapp.net"]
   }
 }
 ```
@@ -454,28 +435,25 @@ Triggered when users are demoted from admin.
   "payload": {
     "chat_id": "120363402106XXXXX@g.us",
     "type": "demote",
-    "jids": [
-      "6289689BBBBBB@s.whatsapp.net"
-    ]
+    "jids": ["6289689BBBBBB@s.whatsapp.net"]
   }
 }
 ```
 
 ### Group Event Fields
 
-| **Field**         | **Type** | **Description**                                              |
-|-------------------|----------|--------------------------------------------------------------|
-| `event`           | string   | Always `"group.participants"` for group events               |
-| `device_id`       | string   | JID of the device that received this event                   |
-| `timestamp`       | string   | RFC3339 formatted timestamp when the group event occurred    |
-| `payload.chat_id` | string   | Group identifier (e.g., `"120363402106XXXXX@g.us"`)          |
-| `payload.type`    | string   | Action type: `"join"`, `"leave"`, `"promote"`, or `"demote"` |
-| `payload.jids`    | array    | Array of user JIDs affected by this action                   |
+| **Field** | **Type** | **Description** |
+| --- | --- | --- |
+| `event` | string | Always `"group.participants"` for group events |
+| `device_id` | string | JID of the device that received this event |
+| `timestamp` | string | RFC3339 formatted timestamp when the group event occurred |
+| `payload.chat_id` | string | Group identifier (e.g., `"120363402106XXXXX@g.us"`) |
+| `payload.type` | string | Action type: `"join"`, `"leave"`, `"promote"`, or `"demote"` |
+| `payload.jids` | array | Array of user JIDs affected by this action |
 
 ## Newsletter Events
 
-Newsletter events are triggered when you interact with WhatsApp Channels (newsletters). These include subscribing,
-unsubscribing, receiving new messages, and mute setting changes.
+Newsletter events are triggered when you interact with WhatsApp Channels (newsletters). These include subscribing, unsubscribing, receiving new messages, and mute setting changes.
 
 ### Newsletter Joined
 
@@ -528,7 +506,7 @@ Triggered when new messages are posted in a newsletter you're subscribed to.
         "type": "text",
         "timestamp": "2026-01-18T12:00:00Z",
         "views_count": 1500,
-        "reaction_counts": {"👍": 50, "❤️": 25}
+        "reaction_counts": { "👍": 50, "❤️": 25 }
       }
     ]
   }
@@ -553,32 +531,29 @@ Triggered when you mute or unmute a newsletter.
 
 ### Newsletter Event Fields
 
-| **Field**                      | **Type** | **Description**                                         |
-|--------------------------------|----------|---------------------------------------------------------|
-| `event`                        | string   | Event type (see table above)                            |
-| `device_id`                    | string   | JID of the device that received this event              |
-| `timestamp`                    | string   | RFC3339 formatted timestamp                             |
-| `payload.newsletter_id`        | string   | Newsletter identifier (e.g., `120363...@newsletter`)    |
-| `payload.name`                 | string   | Newsletter name (only in `newsletter.joined`)           |
-| `payload.description`          | string   | Newsletter description (only in `newsletter.joined`)    |
-| `payload.role`                 | string   | Your role in the newsletter (only in `newsletter.left`) |
-| `payload.mute`                 | string   | Mute state: `"on"` or `"off"` (only in `newsletter.mute`)|
-| `payload.messages`             | array    | Array of messages (only in `newsletter.message`)        |
-| `payload.messages[].server_id` | number   | Server-assigned message ID                              |
-| `payload.messages[].message_id`| string   | Message identifier                                      |
-| `payload.messages[].type`      | string   | Message type (e.g., `"text"`, `"image"`)                |
-| `payload.messages[].timestamp` | string   | Message timestamp                                       |
-| `payload.messages[].views_count`| number  | Number of views (if available)                          |
-| `payload.messages[].reaction_counts`| object | Reaction emoji counts (if available)                 |
+| **Field** | **Type** | **Description** |
+| --- | --- | --- |
+| `event` | string | Event type (see table above) |
+| `device_id` | string | JID of the device that received this event |
+| `timestamp` | string | RFC3339 formatted timestamp |
+| `payload.newsletter_id` | string | Newsletter identifier (e.g., `120363...@newsletter`) |
+| `payload.name` | string | Newsletter name (only in `newsletter.joined`) |
+| `payload.description` | string | Newsletter description (only in `newsletter.joined`) |
+| `payload.role` | string | Your role in the newsletter (only in `newsletter.left`) |
+| `payload.mute` | string | Mute state: `"on"` or `"off"` (only in `newsletter.mute`) |
+| `payload.messages` | array | Array of messages (only in `newsletter.message`) |
+| `payload.messages[].server_id` | number | Server-assigned message ID |
+| `payload.messages[].message_id` | string | Message identifier |
+| `payload.messages[].type` | string | Message type (e.g., `"text"`, `"image"`) |
+| `payload.messages[].timestamp` | string | Message timestamp |
+| `payload.messages[].views_count` | number | Number of views (if available) |
+| `payload.messages[].reaction_counts` | object | Reaction emoji counts (if available) |
 
 ## Call Events
 
-Call events are triggered when you receive an incoming WhatsApp call. You can optionally auto-reject calls using the
-`WHATSAPP_AUTO_REJECT_CALL` environment variable or `--auto-reject-call` CLI flag.
+Call events are triggered when you receive an incoming WhatsApp call. You can optionally auto-reject calls using the `WHATSAPP_AUTO_REJECT_CALL` environment variable or `--auto-reject-call` CLI flag.
 
-When chat storage is enabled, each incoming call is also persisted as a synthetic message in the chat history:
-`media_type` is `call`, `content` is `Incoming call`, and `call_metadata` (JSON) holds `call_id`, `auto_rejected`, and
-optional `remote_platform`, `remote_version`, and `group_jid`. List chat messages via the REST/MCP chat APIs to retrieve these rows.
+When chat storage is enabled, each incoming call is also persisted as a synthetic message in the chat history: `media_type` is `call`, `content` is `Incoming call`, and `call_metadata` (JSON) holds `call_id`, `auto_rejected`, and optional `remote_platform`, `remote_version`, and `group_jid`. List chat messages via the REST/MCP chat APIs to retrieve these rows.
 
 ### Call Offer
 
@@ -621,17 +596,17 @@ When `WHATSAPP_AUTO_REJECT_CALL=true`, calls are automatically rejected and the 
 
 ### Call Event Fields
 
-| **Field**                 | **Type** | **Description**                                            |
-|---------------------------|----------|------------------------------------------------------------|
-| `event`                   | string   | Always `"call.offer"` for call events                      |
-| `device_id`               | string   | JID of the device that received this event                 |
-| `timestamp`               | string   | RFC3339 formatted timestamp when the call was received     |
-| `payload.call_id`         | string   | Unique identifier for the call                             |
-| `payload.from`            | string   | JID of the caller                                          |
-| `payload.auto_rejected`   | boolean  | Whether the call was auto-rejected                         |
-| `payload.remote_platform` | string   | Platform of the caller (e.g., `"android"`, `"ios"`)        |
-| `payload.remote_version`  | string   | WhatsApp version of the caller                             |
-| `payload.group_jid`       | string   | Group JID if this is a group call (optional)               |
+| **Field** | **Type** | **Description** |
+| --- | --- | --- |
+| `event` | string | Always `"call.offer"` for call events |
+| `device_id` | string | JID of the device that received this event |
+| `timestamp` | string | RFC3339 formatted timestamp when the call was received |
+| `payload.call_id` | string | Unique identifier for the call |
+| `payload.from` | string | JID of the caller |
+| `payload.auto_rejected` | boolean | Whether the call was auto-rejected |
+| `payload.remote_platform` | string | Platform of the caller (e.g., `"android"`, `"ios"`) |
+| `payload.remote_version` | string | WhatsApp version of the caller |
+| `payload.group_jid` | string | Group JID if this is a group call (optional) |
 
 ### Configuration
 
@@ -653,12 +628,9 @@ WHATSAPP_AUTO_REJECT_CALL=true
 
 ### Image Message
 
-When `WHATSAPP_AUTO_DOWNLOAD_MEDIA` is enabled, media is downloaded and `image` contains the file path.
-When disabled, `image` contains an object with the URL.
+When `WHATSAPP_AUTO_DOWNLOAD_MEDIA` is enabled, media is downloaded and `image` contains the file path. When disabled, `image` contains an object with the URL.
 
-If a caption is present, it is included in the top-level `body` field (consistent with text messages).
-When auto-download is enabled and a caption exists, `image` becomes an object with `path` and `caption`.
-When no caption exists, `image` remains a plain file path string for backward compatibility.
+If a caption is present, it is included in the top-level `body` field (consistent with text messages). When auto-download is enabled and a caption exists, `image` becomes an object with `path` and `caption`. When no caption exists, `image` remains a plain file path string for backward compatibility.
 
 With auto-download enabled (no caption):
 
@@ -957,18 +929,18 @@ Triggered when a message is deleted for the current user (DeleteForMe event).
 
 **Fields:**
 
-| **Field**                      | **Type** | **Description**                                       |
-|--------------------------------|----------|-------------------------------------------------------|
-| `payload.deleted_message_id`   | string   | ID of the deleted message                             |
-| `payload.timestamp`            | string   | RFC3339 timestamp when the delete event occurred      |
-| `payload.from`                 | string   | JID of the user who deleted the message               |
-| `payload.chat_id`              | string   | Chat identifier where the message was deleted         |
-| `payload.original_content`     | string   | Original message content (if available from storage)  |
-| `payload.original_sender`      | string   | Original sender of the deleted message                |
-| `payload.original_timestamp`   | string   | Original message timestamp                            |
-| `payload.was_from_me`          | boolean  | Whether the deleted message was sent by current user  |
-| `payload.original_media_type`  | string   | Media type if the message contained media (optional)  |
-| `payload.original_filename`    | string   | Filename if the message contained media (optional)    |
+| **Field** | **Type** | **Description** |
+| --- | --- | --- |
+| `payload.deleted_message_id` | string | ID of the deleted message |
+| `payload.timestamp` | string | RFC3339 timestamp when the delete event occurred |
+| `payload.from` | string | JID of the user who deleted the message |
+| `payload.chat_id` | string | Chat identifier where the message was deleted |
+| `payload.original_content` | string | Original message content (if available from storage) |
+| `payload.original_sender` | string | Original sender of the deleted message |
+| `payload.original_timestamp` | string | Original message timestamp |
+| `payload.was_from_me` | boolean | Whether the deleted message was sent by current user |
+| `payload.original_media_type` | string | Media type if the message contained media (optional) |
+| `payload.original_filename` | string | Filename if the message contained media (optional) |
 
 ### Message Revoked
 
@@ -1096,26 +1068,26 @@ When a conversation starts from a Meta Click-to-WhatsApp ad, the first inbound m
 
 **Referral fields** (all optional, only present when the message originated from a Meta ad):
 
-| **Field**                          | **Type** | **Description**                                                    |
-|------------------------------------|----------|--------------------------------------------------------------------|
-| `ctwa_clid`                        | string   | Meta Click-to-WhatsApp click ID for ad attribution                 |
-| `source_url`                       | string   | Landing page / ad destination URL                                  |
-| `source_id`                        | string   | Meta ad creative or ad set ID                                      |
-| `ref`                              | string   | The `ref` parameter set on the WhatsApp button in the ad           |
-| `source_app`                       | string   | Origin platform: `"facebook"` or `"instagram"`                     |
-| `media_type`                       | string   | Ad creative media type: `"NONE"`, `"IMAGE"`, or `"VIDEO"`         |
-| `ad_title`                         | string   | Ad creative title                                                  |
-| `ad_body`                          | string   | Ad creative description/body text                                  |
-| `thumbnail_url`                    | string   | URL of the ad thumbnail image                                      |
-| `original_image_url`               | string   | URL of the original ad image                                       |
-| `media_url`                        | string   | URL of the ad media                                                |
-| `show_ad_attribution`              | boolean  | Whether to show the ad attribution badge                           |
-| `contains_auto_reply`              | boolean  | Whether the ad has a pre-filled auto-reply message                 |
-| `automated_greeting_message_shown` | boolean  | Whether the automated greeting was shown to the user               |
-| `greeting_message_body`            | string   | Body text of the automated greeting message                        |
-| `click_to_whatsapp_call`           | boolean  | Whether this is a Click-to-WhatsApp Call ad (vs chat)              |
-| `source_type`                      | string   | Source type (e.g., `"ad"`)                                         |
-| `ad_type`                          | string   | Ad type: `"CTWA"` (Click-to-WhatsApp) or `"CAWC"` (Click-to-Call) |
+| **Field** | **Type** | **Description** |
+| --- | --- | --- |
+| `ctwa_clid` | string | Meta Click-to-WhatsApp click ID for ad attribution |
+| `source_url` | string | Landing page / ad destination URL |
+| `source_id` | string | Meta ad creative or ad set ID |
+| `ref` | string | The `ref` parameter set on the WhatsApp button in the ad |
+| `source_app` | string | Origin platform: `"facebook"` or `"instagram"` |
+| `media_type` | string | Ad creative media type: `"NONE"`, `"IMAGE"`, or `"VIDEO"` |
+| `ad_title` | string | Ad creative title |
+| `ad_body` | string | Ad creative description/body text |
+| `thumbnail_url` | string | URL of the ad thumbnail image |
+| `original_image_url` | string | URL of the original ad image |
+| `media_url` | string | URL of the ad media |
+| `show_ad_attribution` | boolean | Whether to show the ad attribution badge |
+| `contains_auto_reply` | boolean | Whether the ad has a pre-filled auto-reply message |
+| `automated_greeting_message_shown` | boolean | Whether the automated greeting was shown to the user |
+| `greeting_message_body` | string | Body text of the automated greeting message |
+| `click_to_whatsapp_call` | boolean | Whether this is a Click-to-WhatsApp Call ad (vs chat) |
+| `source_type` | string | Source type (e.g., `"ad"`) |
+| `ad_type` | string | Ad type: `"CTWA"` (Click-to-WhatsApp) or `"CAWC"` (Click-to-Call) |
 
 ## Integration Guide
 
@@ -1142,126 +1114,126 @@ When a conversation starts from a Meta Click-to-WhatsApp ad, the first inbound m
 ### Webhook Endpoint Implementation (Express.js)
 
 ```javascript
-const express = require('express');
-const crypto = require('crypto');
+const express = require("express");
+const crypto = require("crypto");
 const app = express();
 
-app.use(express.raw({type: 'application/json'}));
+app.use(express.raw({ type: "application/json" }));
 
-app.post('/webhook', (req, res) => {
-    const signature = req.headers['x-hub-signature-256'];
-    const payload = req.body;
-    const secret = 'your-secret-key';
+app.post("/webhook", (req, res) => {
+  const signature = req.headers["x-hub-signature-256"];
+  const payload = req.body;
+  const secret = "your-secret-key";
 
-    // Verify signature
-    if (!verifyWebhookSignature(payload, signature, secret)) {
-        return res.status(401).send('Unauthorized');
-    }
+  // Verify signature
+  if (!verifyWebhookSignature(payload, signature, secret)) {
+    return res.status(401).send("Unauthorized");
+  }
 
-    // Parse and process webhook data
-    const data = JSON.parse(payload);
-    console.log('Received webhook:', data);
+  // Parse and process webhook data
+  const data = JSON.parse(payload);
+  console.log("Received webhook:", data);
 
-    // Handle different event types based on data.event
-    switch (data.event) {
-        case 'message':
-            console.log('New message:', {
-                id: data.payload.id,
-                from: data.payload.from,
-                body: data.payload.body,
-                chat_id: data.payload.chat_id
-            });
-            break;
+  // Handle different event types based on data.event
+  switch (data.event) {
+    case "message":
+      console.log("New message:", {
+        id: data.payload.id,
+        from: data.payload.from,
+        body: data.payload.body,
+        chat_id: data.payload.chat_id,
+      });
+      break;
 
-        case 'message.reaction':
-            console.log('Reaction:', {
-                reaction: data.payload.reaction,
-                reacted_message_id: data.payload.reacted_message_id
-            });
-            break;
+    case "message.reaction":
+      console.log("Reaction:", {
+        reaction: data.payload.reaction,
+        reacted_message_id: data.payload.reacted_message_id,
+      });
+      break;
 
-        case 'message.revoked':
-            console.log('Message revoked:', data.payload.revoked_message_id);
-            break;
+    case "message.revoked":
+      console.log("Message revoked:", data.payload.revoked_message_id);
+      break;
 
-        case 'message.edited':
-            console.log('Message edited:', {
-                original_id: data.payload.original_message_id,
-                new_body: data.payload.body
-            });
-            break;
+    case "message.edited":
+      console.log("Message edited:", {
+        original_id: data.payload.original_message_id,
+        new_body: data.payload.body,
+      });
+      break;
 
-        case 'message.ack':
-            console.log(`Message ${data.payload.receipt_type}:`, {
-                chat_id: data.payload.chat_id,
-                message_ids: data.payload.ids,
-                description: data.payload.receipt_type_description
-            });
-            break;
+    case "message.ack":
+      console.log(`Message ${data.payload.receipt_type}:`, {
+        chat_id: data.payload.chat_id,
+        message_ids: data.payload.ids,
+        description: data.payload.receipt_type_description,
+      });
+      break;
 
-        case 'group.participants':
-            console.log(`Group ${data.payload.type} event:`, {
-                chat_id: data.payload.chat_id,
-                affected_users: data.payload.jids
-            });
-            break;
+    case "group.participants":
+      console.log(`Group ${data.payload.type} event:`, {
+        chat_id: data.payload.chat_id,
+        affected_users: data.payload.jids,
+      });
+      break;
 
-        case 'newsletter.joined':
-            console.log('Joined newsletter:', {
-                newsletter_id: data.payload.newsletter_id,
-                name: data.payload.name
-            });
-            break;
+    case "newsletter.joined":
+      console.log("Joined newsletter:", {
+        newsletter_id: data.payload.newsletter_id,
+        name: data.payload.name,
+      });
+      break;
 
-        case 'newsletter.left':
-            console.log('Left newsletter:', {
-                newsletter_id: data.payload.newsletter_id,
-                role: data.payload.role
-            });
-            break;
+    case "newsletter.left":
+      console.log("Left newsletter:", {
+        newsletter_id: data.payload.newsletter_id,
+        role: data.payload.role,
+      });
+      break;
 
-        case 'newsletter.message':
-            console.log('Newsletter message:', {
-                newsletter_id: data.payload.newsletter_id,
-                messages: data.payload.messages
-            });
-            break;
+    case "newsletter.message":
+      console.log("Newsletter message:", {
+        newsletter_id: data.payload.newsletter_id,
+        messages: data.payload.messages,
+      });
+      break;
 
-        case 'newsletter.mute':
-            console.log('Newsletter mute changed:', {
-                newsletter_id: data.payload.newsletter_id,
-                mute: data.payload.mute
-            });
-            break;
+    case "newsletter.mute":
+      console.log("Newsletter mute changed:", {
+        newsletter_id: data.payload.newsletter_id,
+        mute: data.payload.mute,
+      });
+      break;
 
-        case 'call.offer':
-            console.log('Incoming call:', {
-                call_id: data.payload.call_id,
-                from: data.payload.from,
-                auto_rejected: data.payload.auto_rejected,
-                platform: data.payload.remote_platform
-            });
-            break;
-    }
+    case "call.offer":
+      console.log("Incoming call:", {
+        call_id: data.payload.call_id,
+        from: data.payload.from,
+        auto_rejected: data.payload.auto_rejected,
+        platform: data.payload.remote_platform,
+      });
+      break;
+  }
 
-    res.status(200).send('OK');
+  res.status(200).send("OK");
 });
 
 function verifyWebhookSignature(payload, signature, secret) {
-    const expectedSignature = crypto
-        .createHmac('sha256', secret)
-        .update(payload, 'utf8')
-        .digest('hex');
+  const expectedSignature = crypto
+    .createHmac("sha256", secret)
+    .update(payload, "utf8")
+    .digest("hex");
 
-    const receivedSignature = signature.replace('sha256=', '');
-    return crypto.timingSafeEqual(
-        Buffer.from(expectedSignature, 'hex'),
-        Buffer.from(receivedSignature, 'hex')
-    );
+  const receivedSignature = signature.replace("sha256=", "");
+  return crypto.timingSafeEqual(
+    Buffer.from(expectedSignature, "hex"),
+    Buffer.from(receivedSignature, "hex")
+  );
 }
 
 app.listen(3001, () => {
-    console.log('Webhook server listening on port 3001');
+  console.log("Webhook server listening on port 3001");
 });
 ```
 
@@ -1323,24 +1295,24 @@ WHATSAPP_WEBHOOK_SECRET=your-super-secret-key
 ### Common Issues
 
 1. **Webhook not receiving events**:
-    - Check webhook URL is accessible from the internet
-    - Verify webhook configuration
-    - Check firewall and network settings
+   - Check webhook URL is accessible from the internet
+   - Verify webhook configuration
+   - Check firewall and network settings
 
 2. **Signature verification fails**:
-    - Ensure webhook secret matches configuration
-    - Use raw request body for signature calculation
-    - Check HMAC implementation
+   - Ensure webhook secret matches configuration
+   - Use raw request body for signature calculation
+   - Check HMAC implementation
 
 3. **Timeouts**:
-    - Optimize webhook processing speed
-    - Implement asynchronous processing
-    - Return response quickly, process in background
+   - Optimize webhook processing speed
+   - Implement asynchronous processing
+   - Return response quickly, process in background
 
 4. **Missing media files**:
-    - Check media storage path configuration
-    - Ensure sufficient disk space
-    - Verify file permissions
+   - Check media storage path configuration
+   - Ensure sufficient disk space
+   - Verify file permissions
 
 ### Debug Logging
 

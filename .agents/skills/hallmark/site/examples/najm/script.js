@@ -1,10 +1,10 @@
 // NAJM · cart drawer + add-to-bag micro
 const $ = (s, p = document) => p.querySelector(s);
-const $$ = (s, p = document) => Array.from(p.querySelectorAll(s));
+const $$ = (s, p = document) => [...p.querySelectorAll(s)];
 
 const drawer = $("#drawer");
 const scrim = $("#scrim");
-const cartBtn = $("#cartBtn");
+const cartButton = $("#cartBtn");
 const cartCount = $("#cartCount");
 const cartTotal = $("#cartTotal");
 const cartLines = $("#cartLines");
@@ -40,8 +40,8 @@ function render() {
     </div>
   `).join("");
 
-  const subtotal = state.items.reduce((s, i) => s + i.price * i.qty, 0);
-  const count = state.items.reduce((s, i) => s + i.qty, 0);
+  const subtotal = state.items.reduce((s, index) => s + index.price * index.qty, 0);
+  const count = state.items.reduce((s, index) => s + index.qty, 0);
 
   cartCount.textContent = count;
   cartTotal.textContent = fmt(subtotal);
@@ -64,10 +64,10 @@ function close() {
   scrim.classList.remove("is-open");
   drawer.setAttribute("aria-hidden", "true");
   document.body.style.overflow = "";
-  cartBtn.focus();
+  cartButton.focus();
 }
 
-cartBtn.addEventListener("click", open);
+cartButton.addEventListener("click", open);
 $("#mobileCart")?.addEventListener("click", open);
 scrim.addEventListener("click", close);
 $(".drawer__close").addEventListener("click", close);
@@ -76,23 +76,23 @@ document.addEventListener("keydown", (e) => {
 });
 
 cartLines.addEventListener("click", (e) => {
-  const btn = e.target.closest("button[data-act]");
-  if (!btn) return;
-  const line = btn.closest(".drawer__line");
-  const item = state.items.find(i => i.id === line.dataset.id);
+  const button = e.target.closest("button[data-act]");
+  if (!button) return;
+  const line = button.closest(".drawer__line");
+  const item = state.items.find(index => index.id === line.dataset.id);
   if (!item) return;
-  if (btn.dataset.act === "inc") item.qty += 1;
-  if (btn.dataset.act === "dec") item.qty = Math.max(1, item.qty - 1);
+  if (button.dataset.act === "inc") item.qty += 1;
+  if (button.dataset.act === "dec") item.qty = Math.max(1, item.qty - 1);
   render();
 });
 
 // Add-to-bag from product cards
-$$("[data-add]").forEach(btn => {
-  btn.addEventListener("click", (e) => {
+for (const button of $$("[data-add]")) {
+  button.addEventListener("click", (e) => {
     e.preventDefault();
-    const card = btn.closest("[data-product]");
+    const card = button.closest("[data-product]");
     const id = card.dataset.product;
-    const found = state.items.find(i => i.id === id);
+    const found = state.items.find(index => index.id === id);
     if (found) {
       found.qty += 1;
     } else {
@@ -109,10 +109,10 @@ $$("[data-add]").forEach(btn => {
     cartCount.classList.remove("is-pulse");
     void cartCount.offsetWidth; // restart animation
     cartCount.classList.add("is-pulse");
-    btn.textContent = "Added ✓";
-    setTimeout(() => { btn.textContent = btn.dataset.label || "Add to bag"; }, 1400);
+    button.textContent = "Added ✓";
+    setTimeout(() => { button.textContent = button.dataset.label || "Add to bag"; }, 1400);
   });
-});
+}
 
 // Newsletter — inline confirmation, no toast
 $("#news")?.addEventListener("submit", (e) => {

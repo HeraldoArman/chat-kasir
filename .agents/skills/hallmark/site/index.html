@@ -64,18 +64,18 @@
   <script>
     // Load theme before paint to avoid flash. Order: ?theme= → localStorage → default.
     try {
-      const url = new URL(window.location.href);
+      const url = new URL(globalThis.location.href);
       const q = url.searchParams.get("theme");
       const t = q || localStorage.getItem("hallmark-theme");
       if (t) document.documentElement.dataset.theme = t;
-    } catch (e) { }
+    } catch {}
 
     // Mark fonts-ready when document.fonts resolves; safety timeout at 1200 ms.
     // Pairs with the entrance-fade <style> above. Fires once on first load —
     // theme switches don't reset the attribute, so the fade never re-runs.
     (function () {
-      var html = document.documentElement;
-      var fired = false;
+      const html = document.documentElement;
+      let fired = false;
       function ready() {
         if (fired) return;
         fired = true;
@@ -93,7 +93,7 @@
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-C-D0j4RyxujH0xB9vHv0a.js"></script>
   <script>
-    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    globalThis.plausible=globalThis.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(index){plausible.o=index||{}};
     plausible.init()
   </script>
 </head>

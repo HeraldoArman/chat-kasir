@@ -1,0 +1,4 @@
+.agents/
+apps/core/.venv/
+apps/web/.next/
+node_modules/

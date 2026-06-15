@@ -9,7 +9,7 @@ from app.services.rag import RAGService
 
 class IngestRequest(BaseModel):
     texts: list[str]
-    metadata: list[dict]
+    metadata: list[dict[str, object]]
 
 
 class QueryRequest(BaseModel):
@@ -20,7 +20,7 @@ class QueryRequest(BaseModel):
 class RetrievedChunk(BaseModel):
     text: str
     score: float
-    metadata: dict
+    metadata: dict[str, object]
 
 
 class QueryResponse(BaseModel):
@@ -44,14 +44,14 @@ def get_rag_service() -> RAGService:
 
 
 @router.post("/ingest")
-async def ingest_documents(request: IngestRequest):
+async def ingest_documents(request: IngestRequest) -> dict[str, str | int]:
     service = get_rag_service()
     service.add_documents(request.texts, request.metadata)
     return {"status": "ok", "documents_ingested": len(request.texts)}
 
 
 @router.post("/query", response_model=QueryResponse)
-async def query_rag(request: QueryRequest):
+async def query_rag(request: QueryRequest) -> QueryResponse:
     service = get_rag_service()
     results = service.retrieve(request.query, request.top_k)
     return QueryResponse(

@@ -1,8 +1,9 @@
 from datetime import datetime
 from enum import StrEnum
+from uuid import UUID as UuidType
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,7 +18,7 @@ class OAuthProvider(StrEnum):
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UuidType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     username: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
     full_name: Mapped[str] = mapped_column(String(100), nullable=False)
     whatsapp_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
@@ -25,10 +26,10 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(default=True)
     is_superuser: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=datetime.utcnow
+        DateTime(timezone=True), server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), onupdate=datetime.utcnow
+        DateTime(timezone=True), onupdate=func.now()
     )
 
     oauth_accounts: Mapped[list["OAuthAccount"]] = relationship(
@@ -39,8 +40,8 @@ class User(Base):
 class OAuthAccount(Base):
     __tablename__ = "oauth_accounts"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id: Mapped[uuid4] = mapped_column(
+    id: Mapped[UuidType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UuidType] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     provider: Mapped[OAuthProvider] = mapped_column(String(20), nullable=False)
@@ -49,7 +50,7 @@ class OAuthAccount(Base):
     refresh_token: Mapped[str | None] = mapped_column(String(500), nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=datetime.utcnow
+        DateTime(timezone=True), server_default=func.now()
     )
 
     user: Mapped["User"] = relationship("User", back_populates="oauth_accounts")
