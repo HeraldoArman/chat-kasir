@@ -86,7 +86,7 @@ export default function RegisterPage() {
       />
 
       <FadeIn>
-        <Card className="w-full max-w-md rounded-3xl border shadow-sm">
+        <Card className="w-full max-w-3xl rounded-3xl border shadow-sm">
           <CardHeader className="flex flex-col items-center gap-4 text-center">
             <div className="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-2xl">
               <Store className="size-6" />
