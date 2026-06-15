@@ -4,7 +4,7 @@ RUN pip install uv
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock ./
+COPY apps/core/pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project
 
 FROM python:3.13-slim AS runtime
@@ -16,7 +16,7 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
-COPY app/ ./app/
+COPY apps/core/app/ ./app/
 
 RUN useradd --create-home --shell /bin/bash appuser && \
     chown -R appuser:appuser /app
