@@ -7,7 +7,6 @@
 // Sponsor: https://github.com/sponsors/AmanVarshney01
 //
 // Add new addons with: bun create better-t-stack add
-// This file is safe to delete
 
 {
   "$schema": "https://r2.better-t-stack.dev/schema.json",
