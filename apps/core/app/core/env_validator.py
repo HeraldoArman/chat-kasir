@@ -3,7 +3,7 @@
 import os
 
 REQUIRED_ENV_VARS = [
-    "DEEPINFRA_API_KEY",
+    "OPENAI_API_KEY",
     "DATABASE_URL",
     "JWT_SECRET_KEY",
 ]

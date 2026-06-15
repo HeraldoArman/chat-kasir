@@ -16,15 +16,19 @@ class RAGService:
         self._ensure_collection()
 
     def _ensure_collection(self) -> None:
-        collections = self.client.get_collections().collections
-        if not any(c.name == self.config.collection_name for c in collections):
-            self.client.create_collection(
-                collection_name=self.config.collection_name,
-                vectors_config=VectorParams(
-                    size=384,
-                    distance=Distance.COSINE,
-                ),
-            )
+        try:
+            collections = self.client.get_collections().collections
+            if not any(c.name == self.config.collection_name for c in collections):
+                self.client.create_collection(
+                    collection_name=self.config.collection_name,
+                    vectors_config=VectorParams(
+                        size=384,
+                        distance=Distance.COSINE,
+                    ),
+                )
+        except Exception:
+            # Degrade gracefully if Qdrant is unavailable/offline.
+            pass
 
     def add_documents(self, texts: list[str], metadata: list[dict[str, object]]) -> None:
         vectors = self.embedding.embed_documents(texts)

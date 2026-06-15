@@ -6,9 +6,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DEEPINFRA_API_KEY=${DEEPINFRA_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - GOWA_BASE_URL=http://whatsapp:8080
+      - GOWA_DEVICE_ID=${GOWA_DEVICE_ID}
+      - GOWA_WEBHOOK_SECRET=${GOWA_WEBHOOK_SECRET}
     restart: unless-stopped
     healthcheck:
       test:

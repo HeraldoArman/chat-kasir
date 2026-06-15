@@ -8,12 +8,11 @@ from app.models.commerce import (
     Store,
 )
 from app.models.database import Base
-from app.models.user import OAuthAccount, User
+from app.models.user import User
 
 __all__ = [
     "Base",
     "User",
-    "OAuthAccount",
     "Store",
     "Product",
     "BankAccount",

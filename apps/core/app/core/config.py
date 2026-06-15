@@ -8,10 +8,10 @@ ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class LLMConfig(BaseSettings):
-    provider: str = "deepinfra"
-    model: str = "deepseek-ai/DeepSeek-V4-Flash"
-    base_url: str = "https://api.deepinfra.com/v1/openai"
-    temperature: float = 0.7
+    provider: str = "openai"
+    model: str = "gpt-5.4-mini"
+    base_url: str = "https://api.openai.com/v1"
+    temperature: float = 0.3
     max_tokens: int = 4096
     timeout: int = 120
 
@@ -31,12 +31,6 @@ class ServerConfig(BaseSettings):
 class LoggingConfig(BaseSettings):
     level: str = "INFO"
     format: str = "json"
-
-
-class GoogleOAuthConfig(BaseSettings):
-    client_id: str = Field(default="", validation_alias="GOOGLE_OAUTH_CLIENT_ID")
-    client_secret: str = Field(default="", validation_alias="GOOGLE_OAUTH_CLIENT_SECRET")
-    redirect_uri: str = Field(default="", validation_alias="GOOGLE_OAUTH_REDIRECT_URI")
 
 
 class JWTConfig(BaseSettings):
@@ -59,6 +53,12 @@ class RAGConfig(BaseSettings):
     chunk_overlap: int = 50
 
 
+class GoWAConfig(BaseSettings):
+    base_url: str = Field(default="http://localhost:8080", validation_alias="GOWA_BASE_URL")
+    device_id: str = Field(default="", validation_alias="GOWA_DEVICE_ID")
+    webhook_secret: str = Field(default="", validation_alias="GOWA_WEBHOOK_SECRET")
+
+
 class AppConfig(BaseSettings):
     llm: LLMConfig = Field(default_factory=LLMConfig)
     mem0: Mem0Config = Field(default_factory=Mem0Config)
@@ -66,8 +66,8 @@ class AppConfig(BaseSettings):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     jwt: JWTConfig = Field(default_factory=JWTConfig)
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
-    google_oauth: GoogleOAuthConfig = Field(default_factory=GoogleOAuthConfig)
     rag: RAGConfig = Field(default_factory=RAGConfig)
+    gowa: GoWAConfig = Field(default_factory=GoWAConfig)
 
 
 _config_cache: AppConfig | None = None
